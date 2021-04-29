@@ -13,8 +13,10 @@
 #endif
 
 #include <main.hpp>
-#include "uart.h"
 
+extern "C" {
+#include "uart.h"
+}
 
 
 int main(void)
@@ -23,11 +25,11 @@ int main(void)
 	RCC_DeInit();		//	сбрасываем тактирование
 	SetSysClockTo72();	//	тактирование от внешнего 8 MHz -> 72 MHz
 	GPIO_Init();		//	настройка портов
-	SysTick_Init();		//	запуск системного таймера
+	SysTick_Init();		//	запуск системного таймера (для функции delay)
 
 	GPIOC->BSRR = GPIO_BSRR_BS13;		//установить нулевой бит
-/*
-	DMA1_Init();
+
+ 	DMA1_Init();
 	USART1_Init();
 
 		//	разрешим от данного модуля локальные прерывания – по заполнению приёмного буфера и по ошибке передачи данных
@@ -39,19 +41,19 @@ int main(void)
 for(uint8_t t = 0; t < 15; t++)		{put_byte_UART1(t);}
 
 uint8_t i = 0;
-*/
+
 	while(1)
 	{
 		GPIOC->BSRR = GPIO_BSRR_BR13;		//сбросить нулевой бит
-		delay_ms(500);
+		delay_ms(300);
 		GPIOC->BSRR = GPIO_BSRR_BS13;		//установить нулевой бит
-		delay_ms(500);
-/*
+		delay_ms(300);
+
 		put_byte_UART1(i++);
 		put_byte_UART1(i++);
 		put_byte_UART1(i++);
 		put_byte_UART1(i++);
-*/
+
 	}
 }
 
