@@ -13,7 +13,7 @@
 #endif
 
 #include <main.hpp>
-
+#include <gpio.h>
 extern "C" {
 #include "uart.h"
 }
@@ -24,7 +24,7 @@ int main(void)
 
 	RCC_DeInit();		//	сбрасываем тактирование
 	SetSysClockTo72();	//	тактирование от внешнего 8 MHz -> 72 MHz
-	GPIO_Init();		//	настройка портов
+//	GPIO_Init();		//	настройка портов
 	SysTick_Init();		//	запуск системного таймера (для функции delay)
 
 	GPIOC->BSRR = GPIO_BSRR_BS13;		//установить нулевой бит
@@ -42,11 +42,25 @@ for(uint8_t t = 0; t < 15; t++)		{put_byte_UART1(t);}
 
 uint8_t i = 0;
 
+
+
+GPIO *port = new GPIO(GPIOC); 				//	создаем экземпляр класса, передаем порт GPIOC
+port->pinConf(13, OUTPUT_PUSH_PULL); 		//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
+port->setPin(13); 							//	установка вывода в 1
+port->resetPin(13); 						//	сброс вывода
+/*
+int value;
+value = port->getPin (13); // считываем состояние вывода
+*/
+
+
+
 	while(1)
 	{
-		GPIOC->BSRR = GPIO_BSRR_BR13;		//сбросить нулевой бит
+
+		port->setPin(13); 					// установка вывода в 1
 		delay_ms(300);
-		GPIOC->BSRR = GPIO_BSRR_BS13;		//установить нулевой бит
+		port->resetPin(13); 				// сброс вывода
 		delay_ms(300);
 
 		put_byte_UART1(i++);
@@ -146,6 +160,9 @@ void GPIO_Init (void)
 
 	SET_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPAEN);				//	enable port A	(запуск тактирование порта A)
 	tmpreg = READ_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPAEN);	//	Delay after an RCC peripheral clock enabling
+
+
+
 /*
 	// Для примера включим светодиод на выводе А9
 	// CNF 00: General purpose output Push-pull
@@ -172,8 +189,9 @@ void GPIO_Init (void)
 */
 
 
+	/*
 	//===================================================
-		SET_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPCEN);				//	enable port A	(запуск тактирование порта A)
+		SET_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPCEN);				//	enable port C	(запуск тактирование порта A)
 		tmpreg = READ_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPCEN);	//	Delay after an RCC peripheral clock enabling
 
 		// Для примера включим светодиод на выводе С13
@@ -186,6 +204,8 @@ void GPIO_Init (void)
 
 		GPIOC->BSRR = GPIO_BSRR_BR13;		//сбросить нулевой бит
 //		GPIOC->BSRR = GPIO_BSRR_BS13;		//установить нулевой бит
+
+ */
 
 }
 
