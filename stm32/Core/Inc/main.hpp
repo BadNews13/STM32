@@ -22,7 +22,7 @@ void GPIO_Init (void);			//	настраиваем порты
 
 #define SYSCLOCK 72000000U
 void SysTick_Init(void);		//	системный таймер для задержек
-void SysTick_Handler(void);		//	обработчик прерывания системного счетчика
+//	extern "C" void SysTick_Handler(void);		//	обработчик прерывания системного счетчика
 void delay_ms(uint32_t ms);		//	функция задержки базирующаяся на системном счетчике
 
 
