@@ -17,3 +17,8 @@ int main(void)
 {
 	for(;;);
 }
+
+class asd{
+
+};
+
