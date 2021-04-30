@@ -1,5 +1,5 @@
 
-#include "uart.h"
+#include <uart_1.h>
 
 volatile static uint8_t tx_write_index = 0;			//	количество байт оптравленных в очередь (которые уже отправляются)
 volatile static uint8_t tx_counter = 0;				//	количество байт, ожидающих отправку

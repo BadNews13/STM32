@@ -15,7 +15,7 @@
 #include <main.hpp>
 #include <gpio.h>
 extern "C" {
-#include "uart.h"
+#include "../../uart_1/uart_1.h"
 }
 
 
@@ -24,7 +24,7 @@ int main(void)
 
 	RCC_DeInit();		//	сбрасываем тактирование
 	SetSysClockTo72();	//	тактирование от внешнего 8 MHz -> 72 MHz
-//	GPIO_Init();		//	настройка портов
+	GPIO_Init();		//	настройка портов
 	SysTick_Init();		//	запуск системного таймера (для функции delay)
 
 	GPIOC->BSRR = GPIO_BSRR_BS13;		//установить нулевой бит
@@ -43,7 +43,7 @@ for(uint8_t t = 0; t < 15; t++)		{put_byte_UART1(t);}
 uint8_t i = 0;
 
 
-
+// Пример настройки светодиода на отладочной плате
 GPIO *port = new GPIO(GPIOC); 				//	создаем экземпляр класса, передаем порт GPIOC
 port->pinConf(13, OUTPUT_PUSH_PULL); 		//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
 port->setPin(13); 							//	установка вывода в 1

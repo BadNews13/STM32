@@ -66,7 +66,7 @@ void GPIO::pinConf ( uint8_t pin_nomber, uint8_t pin_mode ){
 	else if ( pin_nomber > 7 ){
 
 		offset = ( pin_nomber - 8 ) * 4;					//	(13-8) * 4 = 20
-		this->GPIOx->CRH &= ~( GPIO_BITS_MASK << offset );	//	стереть 4 бита // 0xF << 20 (23,22,21,20)
+		this->GPIOx->CRH &= ~( GPIO_BITS_MASK << offset );	//	стереть 4 бита // (0xF << 20) - (bit_23, bit_22, bit_21, bit_20)
 		this->GPIOx->CRH |= ( mode << offset );				//	записать 4 бита
 
 	} // else
