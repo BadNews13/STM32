@@ -10,42 +10,18 @@
 #define INPUT_PULL_UP_DOWN 0x8 // используется для обоих вариантов
 #define GPIO_BITS_MASK 0xF // маска для стирания битов конфигурации
 
+GPIO::GPIO(){}						// конструктор 1 (для наследавний)
 
-
-GPIO::GPIO(GPIO_TypeDef *port){
-
+GPIO::GPIO(GPIO_TypeDef *port)		// конструктор 2
+{
 	this->GPIOx = port;
-// тактируем порт от шины APB1
-	if ( port == GPIOA){
-
-			RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
-			return;
-	}
-
-	if ( port == GPIOB ){
-
-			RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;
-			return;
-	}
-
-	if ( port == GPIOC ){
-			RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
-			return;
-	}
-
-	if ( port == GPIOD ){
-			RCC->APB2ENR |= RCC_APB2ENR_IOPDEN;
-			return;
-	}
-
-	if ( port == GPIOE ){
-			RCC->APB2ENR |= RCC_APB2ENR_IOPEEN;
-			return;
-
-	}
-
-return;
-
+	// тактируем порт от шины APB1
+	if ( port == GPIOA)		{RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;	return;}
+	if ( port == GPIOB )	{RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;	return;}
+	if ( port == GPIOC )	{RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;	return;}
+	if ( port == GPIOD )	{RCC->APB2ENR |= RCC_APB2ENR_IOPDEN;	return;}
+	if ( port == GPIOE )	{RCC->APB2ENR |= RCC_APB2ENR_IOPEEN;	return;}
+	return;
 }
 
 void GPIO::pinConf ( uint8_t pin_nomber, uint8_t pin_mode ){
@@ -57,19 +33,21 @@ void GPIO::pinConf ( uint8_t pin_nomber, uint8_t pin_mode ){
 	// если вход с подтяжкой меняем pin_mode
 	if ( ( pin_mode == INPUT_PULL_UP ) || ( pin_mode == INPUT_PULL_DOWN ) )	{mode = INPUT_PULL_UP_DOWN;}
 	else																	{mode = pin_mode;}				//	проверить другие дефайны (режимы работы выводов)
-	if ( pin_nomber < 8 ){
 
+	if ( pin_nomber < 8 )
+	{
 		offset = pin_nomber * 4;
 		this->GPIOx->CRL &= ~( GPIO_BITS_MASK << offset );
 		this->GPIOx->CRL |= ( mode << offset );
-	} // if
-	else if ( pin_nomber > 7 ){
+	}
+	else
 
+	if ( pin_nomber > 7 )
+	{
 		offset = ( pin_nomber - 8 ) * 4;					//	(13-8) * 4 = 20
 		this->GPIOx->CRH &= ~( GPIO_BITS_MASK << offset );	//	стереть 4 бита // (0xF << 20) - (bit_23, bit_22, bit_21, bit_20)
 		this->GPIOx->CRH |= ( mode << offset );				//	записать 4 бита
-
-	} // else
+	}
 
 	// если режим пулл-ап ставим бит пина в регистре ODR  в 1
 	if ( pin_mode == INPUT_PULL_UP ){
@@ -132,3 +110,25 @@ int GPIO::getPin ( uint8_t pin_nomber ){
 
 	else return 0;
 }
+
+
+
+
+void GPIO::enablePORT(GPIO_TypeDef *port)	//
+{
+	GPIO:GPIOx = port;
+// тактируем порт от шины APB1
+	if ( port == GPIOA )	{RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;	return;}
+	if ( port == GPIOB )	{RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;	return;}
+	if ( port == GPIOC )	{RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;	return;}
+	if ( port == GPIOD )	{RCC->APB2ENR |= RCC_APB2ENR_IOPDEN;	return;}
+	if ( port == GPIOE )	{RCC->APB2ENR |= RCC_APB2ENR_IOPEEN;	return;}
+
+return;
+}
+
+
+
+
+
+

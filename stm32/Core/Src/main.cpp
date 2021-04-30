@@ -14,6 +14,7 @@
 
 #include <main.hpp>
 #include <gpio.h>
+#include <uart.h>
 extern "C" {
 #include "../../uart_1/uart_1.h"
 }
@@ -29,17 +30,20 @@ int main(void)
 
 	GPIOC->BSRR = GPIO_BSRR_BS13;		//установить нулевой бит
 
- 	DMA1_Init();
-	USART1_Init();
+ //	DMA1_Init();
+//	USART1_Init();
 
-		//	разрешим от данного модуля локальные прерывания – по заполнению приёмного буфера и по ошибке передачи данных
-	  SET_BIT(USART1->CR1, USART_CR1_RXNEIE);
-	  SET_BIT(USART1->CR3, USART_CR3_EIE);
+	/*
+			//	разрешим от данного модуля локальные прерывания – по заполнению приёмного буфера и по ошибке передачи данных
+		  SET_BIT(USART1->CR1, USART_CR1_RXNEIE);
+		  SET_BIT(USART1->CR3, USART_CR3_EIE);
+	*/
+
+
 
 
 
 for(uint8_t t = 0; t < 15; t++)		{put_byte_UART1(t);}
-
 uint8_t i = 0;
 
 
@@ -47,17 +51,24 @@ uint8_t i = 0;
 GPIO *port = new GPIO(GPIOC); 				//	создаем экземпляр класса, передаем порт GPIOC
 port->pinConf(13, OUTPUT_PUSH_PULL); 		//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
 port->setPin(13); 							//	установка вывода в 1
-port->resetPin(13); 						//	сброс вывода
+//port->resetPin(13); 						//	сброс вывода
 /*
 int value;
 value = port->getPin (13); // считываем состояние вывода
 */
 
+UART *uart1 = new UART(USART1, 115200);
+UART *uart2 = new UART(USART2, 115200);
+UART *uart3 = new UART(USART3, 115200);
 
+delay_ms(100);
+USART1->DR = 0x48;
+USART2->DR = 0x76;
+USART3->DR = 0x25;
 
 	while(1)
 	{
-
+/*
 		port->setPin(13); 					// установка вывода в 1
 		delay_ms(300);
 		port->resetPin(13); 				// сброс вывода
@@ -67,7 +78,7 @@ value = port->getPin (13); // считываем состояние вывода
 		put_byte_UART1(i++);
 		put_byte_UART1(i++);
 		put_byte_UART1(i++);
-
+*/
 	}
 }
 

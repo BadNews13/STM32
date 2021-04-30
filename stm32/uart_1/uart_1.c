@@ -6,7 +6,7 @@ volatile static uint8_t tx_counter = 0;				//	количество байт, о�
 
 volatile static	uint8_t	DMA_TX_start_position = 0;	//	позиция с которой начнут перенаправлять байты
 volatile static	uint8_t DMA_TX_count = 0;			//	сколько байт перенаправить
-
+/*
 void USART1_Init(void)
 {
 	SET_BIT(RCC->APB2ENR, RCC_APB2ENR_USART1EN);										//USART Clock
@@ -15,7 +15,7 @@ void USART1_Init(void)
 	// настраиваем пины для uart
 	MODIFY_REG(GPIOA->CRH,
 							  GPIO_CRH_MODE10 | GPIO_CRH_CNF10_1 | GPIO_CRH_CNF9_0,
-							  GPIO_CRH_MODE9  | GPIO_CRH_CNF10_0 | GPIO_CRH_CNF9_1);
+							  	  	  	  	  	  	  	  	  	  	  	  	  	  	  GPIO_CRH_MODE9  | GPIO_CRH_CNF10_0 | GPIO_CRH_CNF9_1);
 
 
 	//USART1 DMA Init
@@ -84,7 +84,7 @@ void USART1_Init(void)
 
 }
 
-
+*/
 void USART1_IRQHandler(void)
 {
 	if(		(READ_BIT(USART1->SR, USART_SR_RXNE) 		== 	(USART_SR_RXNE)) &&			//	Read data register not empty

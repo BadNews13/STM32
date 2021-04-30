@@ -13,7 +13,7 @@
 
 
 //---------------inputs-------------------------------------------------
-#define INPUT_FLOATING 0x4 		// вход без подтяжки
+#define INPUT_FLOATING 0x4 		// вход без подтяжки							0100
 #define INPUT_PULL_UP 0x7F 		// с подтяжкой к питанию
 #define INPUT_PULL_DOWN 0xFF 	// с подтяжкой к "земле"
 #define INPUT_ANALOG 0x0 		// аналоговый вход
@@ -23,14 +23,15 @@
 #define OUTPUT_PUSH_PULL 0x3 	// выход тяни-толкай
 
 //--------------altarnate function---------------------------------------
-#define AF_PUSH_PULL 0xB 			// альтернативная ф-я с выходом тяни-толкай
-#define AF_OPEN_DRAIN 0xF 		// альтернативная функция с открытым стоком
+#define AF_PUSH_PULL 0xB 		// альтернативная ф-я с выходом тяни-толкай		1011
+#define AF_OPEN_DRAIN 0xF 		// альтернативная функция с открытым стоком		1111
 
 class GPIO {
 
 	public:
 
-	GPIO( GPIO_TypeDef *port );
+	GPIO();							// конструктор 1
+	GPIO( GPIO_TypeDef *port );		// конструктор 2
 
 	void pinConf ( uint8_t pin_nomber, uint8_t pin_mode ); // режим работы пина
 	void setPin( uint8_t pin_nomber ); // установить 1 на пине
@@ -43,6 +44,9 @@ class GPIO {
 
 	GPIO_TypeDef *GPIOx;
 	int pin_m;
+
+	protected:
+	void enablePORT(GPIO_TypeDef *port);
 
 
 };

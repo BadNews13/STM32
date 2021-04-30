@@ -12,6 +12,21 @@
 #include <gpio.h>
 #include "stm32f10x.h"
 
+
+
+
+#define	USART1_TX_pin	9
+#define	USART1_RX_pin	10
+
+#define	USART2_TX_pin	2
+#define	USART2_RX_pin	3
+
+#define	USART3_TX_pin	10
+#define	USART3_RX_pin	11
+
+#define	USART1_TX_pin_remaped	6
+#define	USART1_RX_pin_remaped	7
+
 /*
 //	работает
 class UART : GPIO {
@@ -25,13 +40,14 @@ public:
 class UART : GPIO {
 
 public:
-	UART(USART_TypeDef *uart);
+	UART(USART_TypeDef *uart, uint32_t BaudRate);
 	virtual ~UART();
 
 
+
 private:
-	USART_TypeDef *USARTx;
-	GPIO_TypeDef *GPIOx;
+	USART_TypeDef 	*USARTx;
+	GPIO_TypeDef 	*GPIOx;
 
 };
 
