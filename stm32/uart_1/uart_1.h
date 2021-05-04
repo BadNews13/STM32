@@ -15,7 +15,7 @@ extern "C" {
 #include "stm32f10x.h"
 
 void USART1_Init(void);
-void USART1_IRQHandler(void);
+//void USART1_IRQHandler(void);
 void DMA1_Init (void);
 
 #define RX_BUFFER_SIZE 128

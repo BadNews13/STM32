@@ -85,6 +85,8 @@ void USART1_Init(void)
 }
 
 */
+
+/*	пока закоментируем это прерывание, чтобы проверить будет ли оно работать в классе
 void USART1_IRQHandler(void)
 {
 	if(		(READ_BIT(USART1->SR, USART_SR_RXNE) 		== 	(USART_SR_RXNE)) &&			//	Read data register not empty
@@ -96,6 +98,7 @@ void USART1_IRQHandler(void)
 		SET_BIT		(DMA1_Channel5->CCR, DMA_CCR5_EN);				//Enable DMA channel 5
 	}
 }
+*/
 
 
 void DMA1_Init (void)

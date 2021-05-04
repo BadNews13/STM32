@@ -35,6 +35,10 @@ public:
 	virtual ~UART();
 };
 */
+extern "C" {
+//#include "stm32f10x.h"
+void USART1_IRQHandler(void);
+}
 
 
 class UART : GPIO {
@@ -43,6 +47,8 @@ public:
 	UART(USART_TypeDef *uart, uint32_t BaudRate);
 	virtual ~UART();
 
+	void DMA_TX_init();
+	void DMA_RX_init();
 
 
 private:

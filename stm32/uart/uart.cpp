@@ -10,6 +10,8 @@
 
 
 
+
+
 /*
 //	работает
 UART::UART(USART_TypeDef *uart):GPIO() {
@@ -21,7 +23,6 @@ UART::UART(USART_TypeDef *uart):GPIO() {
 UART::UART(USART_TypeDef *uart, uint32_t BaudRate):GPIO() {
 
 	uint32_t F_CPU = 72000000;
-//	uint32_t BaudRate = 115200;
 
 	if (uart == USART1)								//	PA9(TX)		PA10(RX)	//	доступен ремап на PB6(TX) и PB(RX)
 	{
@@ -91,10 +92,68 @@ UART::UART(USART_TypeDef *uart, uint32_t BaudRate):GPIO() {
 	}
 
 
-//	NVIC_EnableIRQ(USART1_IRQn);	//USART1 interrupt Init
+	NVIC_EnableIRQ(USART1_IRQn);	//USART1 interrupt Init
 }
 
 
+void UART::DMA_TX_init()
+{
+	//USART1_TX Init
+	MODIFY_REG	(DMA1_Channel4->CCR, DMA_CCR4_MEM2MEM, DMA_CCR4_DIR);		//	Set transfer direction (Memory to Peripheral)
+	CLEAR_BIT	(DMA1_Channel4->CCR, DMA_CCR4_PL);							//	Set priority level
+	CLEAR_BIT	(DMA1_Channel4->CCR, DMA_CCR4_CIRC);						//	Transfer mode NORMAL
+	CLEAR_BIT	(DMA1_Channel4->CCR, DMA_CCR4_PINC);						//	Set peripheral no increment mode
+	SET_BIT		(DMA1_Channel4->CCR, DMA_CCR4_MINC);						//	Set memory increment mode
+	CLEAR_BIT	(DMA1_Channel4->CCR, DMA_CCR4_PSIZE_1 | DMA_CCR4_PSIZE_0);	//	Set peripheral data width
+	CLEAR_BIT	(DMA1_Channel4->CCR, DMA_CCR4_MSIZE_1 | DMA_CCR4_MSIZE_0);	//	Set memory data width
+
+//	NVIC_EnableIRQ(USART1_IRQn);	//USART1 interrupt Init
+
+
+	CLEAR_BIT(DMA1_Channel4->CCR, DMA_CCR4_EN);			//Disable DMA channels 4
+
+
+	WRITE_REG	(DMA1->IFCR, DMA_IFCR_CGIF4);			//Clear Channel 4 global interrupt flag
+	WRITE_REG	(DMA1->IFCR, DMA_IFCR_CTCIF4);			//Clear Channel 4 transfer complete flag
+	WRITE_REG	(DMA1->IFCR, DMA_IFCR_CTEIF4);			//Clear Channel 4 transfer error flag
+
+
+	SET_BIT		(USART1->CR3, USART_CR3_DMAT);			//Enable DMA Mode for transmission
+	SET_BIT		(DMA1_Channel4->CCR, DMA_CCR4_TCIE);	//Enable Channel 4 Transfer complete interrupt
+	SET_BIT		(DMA1_Channel4->CCR, DMA_CCR4_TEIE);	//Enable Channel 4 Transfer error interrupt
+
+
+
+//	WRITE_REG(DMA1_Channel4->CPAR, (uint32_t)&(USART1->DR));	//	указываем в какую периферию делать транзакцию (в uart)
+//	WRITE_REG(DMA1_Channel4->CMAR, (uint32_t)&tx_str);			//	указываем из какой памяти делать транзакцию (из uart)
+
+}
+
+
+void UART::DMA_RX_init()
+{
+	//USART1_RX Init
+	CLEAR_BIT	(DMA1_Channel5->CCR, DMA_CCR5_DIR | DMA_CCR5_MEM2MEM);		//	Set transfer direction (Peripheral to Memory)
+	CLEAR_BIT	(DMA1_Channel5->CCR, DMA_CCR5_PL);							//	Set priority level
+	SET_BIT		(DMA1_Channel5->CCR, DMA_CCR5_CIRC);						//	Transfer mode NORMAL
+	CLEAR_BIT	(DMA1_Channel5->CCR, DMA_CCR5_PINC);						//	Set peripheral no increment mode
+	CLEAR_BIT	(DMA1_Channel5->CCR, DMA_CCR5_MINC);						//	Set memory increment mode
+	SET_BIT		(DMA1_Channel5->CCR, DMA_CCR5_PSIZE_1 | DMA_CCR5_PSIZE_0);	//	Set peripheral data width
+	CLEAR_BIT	(DMA1_Channel5->CCR, DMA_CCR5_MSIZE_1 | DMA_CCR5_MSIZE_0);	//	Set memory data width
+
+	CLEAR_BIT(DMA1_Channel5->CCR, DMA_CCR5_EN);			//Disable DMA channels 5
+
+	WRITE_REG	(DMA1->IFCR, DMA_IFCR_CGIF5);			//Clear Channel 5 global interrupt flag
+	WRITE_REG	(DMA1->IFCR, DMA_IFCR_CTCIF5);			//Clear Channel 5 transfer complete flag
+	WRITE_REG	(DMA1->IFCR, DMA_IFCR_CTEIF5);			//Clear Channel 5 transfer error flag
+
+	SET_BIT		(USART1->CR3, USART_CR3_DMAR);			//Enable DMA Mode for reception
+	SET_BIT		(DMA1_Channel5->CCR, DMA_CCR5_TCIE);	//Enable Channel 5 Transfer complete interrupt
+	SET_BIT		(DMA1_Channel5->CCR, DMA_CCR5_TEIE);	//Enable Channel 5 Transfer error interrupt
+
+//	WRITE_REG(DMA1_Channel5->CPAR, (uint32_t)&(USART1->DR));	//	указываем из какой периферии делать транзакцию (из uart)
+//	WRITE_REG(DMA1_Channel5->CMAR, (uint32_t)&rx_str);			//	указываем куда делать транзакцию (в память)
+}
 
 
 
@@ -107,5 +166,16 @@ UART::~UART() {
 
 // public gpio
 
+
+void USART1_IRQHandler(void)
+{
+
+	GPIOC->BRR = ( 1 << 13 );			//	сбросить нулевой бит		(включить светодиод)
+	if(		(READ_BIT(USART1->SR, USART_SR_RXNE) 		== 	(USART_SR_RXNE)) &&			//	Read data register not empty
+			(READ_BIT(USART1->CR1, USART_CR1_RXNEIE)	== 	(USART_CR1_RXNEIE))		)	//	RXNE interrupt enable
+	{
+		USART1->DR = 0x40;
+	}
+}
 
 
