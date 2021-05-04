@@ -14,7 +14,7 @@ GPIO::GPIO(){}						// конструктор 1 (для наследавний)
 
 GPIO::GPIO(GPIO_TypeDef *port)		// конструктор 2
 {
-	this->GPIOx = port;
+	this->GPIOx = port;		//	сохраняем порт, т.к. он нужен для работы спинами
 	// тактируем порт от шины APB1
 	if ( port == GPIOA)		{RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;	return;}
 	if ( port == GPIOB )	{RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;	return;}
@@ -114,9 +114,9 @@ int GPIO::getPin ( uint8_t pin_nomber ){
 
 
 
-void GPIO::enablePORT(GPIO_TypeDef *port)	//
+void GPIO::enablePORT(GPIO_TypeDef *port)	//	если использовали пустой конструктор, то вызываем эту функцию, чтобы сконфигурировать порт
 {
-	GPIO:GPIOx = port;
+	GPIO:GPIOx = port;	//	сохраняем порт, т.к. он нужен для работы спинами
 // тактируем порт от шины APB1
 	if ( port == GPIOA )	{RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;	return;}
 	if ( port == GPIOB )	{RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;	return;}

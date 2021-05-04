@@ -46,6 +46,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/gpio}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/uart_1}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/uart}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/dma}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1747706187" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -64,6 +65,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/CMSIS/inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/uart}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/gpio}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/dma}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp.580261195" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp"/>
 							</tool>
@@ -91,6 +93,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="CMSIS"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Core"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Startup"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="dma"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="gpio"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="uart"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="uart_1"/>

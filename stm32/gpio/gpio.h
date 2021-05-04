@@ -33,10 +33,10 @@ class GPIO {
 	GPIO();							// конструктор 1
 	GPIO( GPIO_TypeDef *port );		// конструктор 2
 
-	void pinConf ( uint8_t pin_nomber, uint8_t pin_mode ); // режим работы пина
-	void setPin( uint8_t pin_nomber ); // установить 1 на пине
-	void resetPin( uint8_t pin_nomber ); // сбросить пин
-	int getPin ( uint8_t pin_nomber ); // считываем состояние пина (reg. IDR)
+	void pinConf 	( uint8_t pin_nomber, uint8_t pin_mode ); // режим работы пина
+	void setPin		( uint8_t pin_nomber ); // установить 1 на пине
+	void resetPin	( uint8_t pin_nomber ); // сбросить пин
+	int getPin 		( uint8_t pin_nomber ); // считываем состояние пина (reg. IDR)
 
 //	virtual ~GPIO();
 

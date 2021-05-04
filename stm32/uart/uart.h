@@ -10,6 +10,7 @@
 
  // мой код
 #include <gpio.h>
+#include <dma.h>		//	пока не получается запихнуть его в юарт, т.к. нужно ДВА! обьекта этого класса. Поэтому пока создаем как отдельный обьект внутри данного класса
 #include "stm32f10x.h"
 
 
@@ -27,22 +28,18 @@
 #define	USART1_TX_pin_remaped	6
 #define	USART1_RX_pin_remaped	7
 
-/*
-//	работает
-class UART : GPIO {
-public:
-	UART(GPIO_TypeDef *port);
-	virtual ~UART();
-};
-*/
+#define OUTPUT	1
+#define INPUT	0
+
 extern "C" {
-//#include "stm32f10x.h"
-void USART1_IRQHandler(void);
+void USART1_IRQHandler(void);		//	обработчик прерывания от USART1
+
+void uart1_init(uint32_t BaudRate, uint8_t *tx_buf, uint8_t *rx_buf);
 }
 
 
-class UART : GPIO {
 
+	class UART : GPIO, DMA {
 public:
 	UART(USART_TypeDef *uart, uint32_t BaudRate);
 	virtual ~UART();
@@ -50,10 +47,14 @@ public:
 	void DMA_TX_init();
 	void DMA_RX_init();
 
+	void dma_init(uint8_t direct, uint8_t *buf);								//	конфигурирует канал DMA (исользовать для TX и RX)
+
+	static void led_on(void);
+
+
 
 private:
 	USART_TypeDef 	*USARTx;
-	GPIO_TypeDef 	*GPIOx;
 
 };
 

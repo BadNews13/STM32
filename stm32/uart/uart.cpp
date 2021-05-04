@@ -11,18 +11,12 @@
 
 
 
-
-/*
-//	работает
-UART::UART(USART_TypeDef *uart):GPIO() {
-//	GPIOC->BSRR = GPIO_BSRR_BR13;		//сбросить нулевой бит
-}
-*/
-
-
-UART::UART(USART_TypeDef *uart, uint32_t BaudRate):GPIO() {
-
+UART::UART(USART_TypeDef *uart, uint32_t BaudRate) : GPIO() {
+//UART::UART(USART_TypeDef *uart, uint32_t BaudRate) : GPIO(), DMA() {
 	uint32_t F_CPU = 72000000;
+
+
+	this->USARTx = uart;
 
 	if (uart == USART1)								//	PA9(TX)		PA10(RX)	//	доступен ремап на PB6(TX) и PB(RX)
 	{
@@ -44,6 +38,12 @@ UART::UART(USART_TypeDef *uart, uint32_t BaudRate):GPIO() {
 		CLEAR_BIT	(USART1->CR3, (USART_CR3_SCEN | USART_CR3_IREN | USART_CR3_HDSEL));
 		WRITE_REG	(USART1->BRR, F_CPU/BaudRate);										//BaudRate
 		SET_BIT		(USART1->CR1, USART_CR1_UE);										//Enable
+
+
+		//	разрешим от данного модуля локальные прерывания – по заполнению приёмного буфера и по ошибке передачи данных
+		SET_BIT(USART1->CR1, USART_CR1_RXNEIE);
+		SET_BIT(USART1->CR3, USART_CR3_EIE);
+
 	}
 
 	if (uart == USART2)								//	PA2(TX)		PA3(RX)
@@ -156,7 +156,10 @@ void UART::DMA_RX_init()
 }
 
 
-
+void UART::led_on(void)
+{
+	GPIOC->BRR = ( 1 << 13 );			//	сбросить нулевой бит		(включить светодиод)
+}
 
 
 
@@ -164,18 +167,79 @@ UART::~UART() {
 	// TODO Auto-generated destructor stub
 }
 
-// public gpio
 
 
 void USART1_IRQHandler(void)
 {
 
-	GPIOC->BRR = ( 1 << 13 );			//	сбросить нулевой бит		(включить светодиод)
+	UART::led_on();
 	if(		(READ_BIT(USART1->SR, USART_SR_RXNE) 		== 	(USART_SR_RXNE)) &&			//	Read data register not empty
 			(READ_BIT(USART1->CR1, USART_CR1_RXNEIE)	== 	(USART_CR1_RXNEIE))		)	//	RXNE interrupt enable
 	{
-		USART1->DR = 0x40;
+		uint8_t byte =  USART1->DR;
+		USART1->DR = byte;
 	}
 }
+
+
+void uart1_init(uint32_t BaudRate, uint8_t *tx_buf, uint8_t *rx_buf)
+{
+	UART *uart1  = new UART(USART1, BaudRate);		//	создаем обьект класса UART
+
+	uart1->dma_init(OUTPUT, &tx_buf[0]);				//	внутри экземпляра создаем обьект DMA для отправки данных
+	uart1->dma_init(INPUT, &rx_buf[0]);					//	внутри экземплеяра создаем обьект DMA для приема данных
+}
+
+
+
+
+void UART::dma_init(uint8_t direct, uint8_t *buf)
+{
+	this->enableDMA (DMA1);									//	включить тактирование шины на которой висит DMA
+
+	switch (direct)
+	{
+		case OUTPUT:
+		{
+			this->set_chanel(DMA1_Channel4);				//	выбираем 4-ый канал		//	(USART1_TX)
+			this->set_direct(MEM_TO_PERIPHERAL);			//	устанавливаем направление транзакции
+			this->set_circular_mode(DISABLE_MODE);			//	устанавливаем режим циклический/нормальный
+//			this->set_peripheral_adr(&(USART1->DR));			//	указываем адрес периферии
+			WRITE_REG(DMA1_Channel4->CPAR, (uint32_t)&(USART1->DR));	//	указываем в какую периферию делать транзакцию (в uart)
+
+			this->disable_chanel();							//	выключаем канал
+			NVIC_EnableIRQ(DMA1_Channel4_IRQn);				//	DMA1_Channel4_IRQn interrupt init	(USART1_TX)
+			SET_BIT	(this->USARTx->CR3, USART_CR3_DMAT);	//	Enable DMA Mode for transmission
+		}
+		break;
+
+		case INPUT:
+		{
+			this->set_chanel(DMA1_Channel5);				//	выбираем 5-ый канал		//	(USART1_RX)
+			this->set_direct(PERIPHERAL_TO_MEM);			//	устанавливаем направление транзакции
+			this->set_circular_mode(ENABLE_MODE);			//	устанавливаем режим циклический/нормальный
+//			this->set_peripheral_adr(uint8_t *peripheral);	//	указываем адрес периферии
+			WRITE_REG(DMA1_Channel4->CPAR, (uint32_t)&(USART1->DR));	//	указываем в какую периферию делать транзакцию (в uart)
+			this->disable_chanel();							//	выключаем канал
+			NVIC_EnableIRQ(DMA1_Channel5_IRQn);				//	DMA1_Channel5_IRQn interrupt init (USART1_RX)
+			SET_BIT	(this->USARTx->CR3, USART_CR3_DMAR);	//	Enable DMA Mode for reception
+		}
+		break;
+	}
+
+	this->set_priority(VERY_HIGH);						//	ставим максимальный приоритет (для прерывания)
+	this->set_peripheral_increment(DISABLE_MODE); 		//	выбираем режим инкрементации адреса для периферии
+	this->set_memory_increment(ENABLE_MODE);			//	выбираем режим инкрементации адреса для памяти
+	this->set_memory_data_width(SIZE_8_BITS);			//	устанавливаем размер передаваемого символа
+//	this->set_memory_adr(buf);							//	указываем адрес памяти
+	this->reset_flag(ALL_FLAGS);						//	сбрасываем все флаги
+	this->enable_interrupt(TRANSFER_COMPLETE);			//	разрешаем прерывания
+//	this->enable_chanel();								//	включаем канал
+
+}
+
+
+
+
 
 
