@@ -55,7 +55,7 @@ public:
 	void set_memory_increment(uint8_t mode);		//	выбираем режим инкрементации адреса для памяти
 	void set_memory_data_width(uint8_t width);		//	устанавливаем размер передаваемого символа
 
-	void set_peripheral_adr(uint32_t *peripheral);	//	указываем адрес периферии
+	void set_peripheral_adr(uint8_t *peripheral);	//	указываем адрес периферии
 	void set_memory_adr(uint8_t *memory);			//	указываем адрес памяти
 
 	void reset_flag(uint8_t flag);					//	сбрасываем все флаги

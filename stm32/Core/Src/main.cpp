@@ -40,8 +40,7 @@ int main(void)
 
 
 
-for(uint8_t t = 0; t < 15; t++)		{put_byte_UART1(t);}
-uint8_t i = 0;
+
 
 
 // Пример настройки светодиода на отладочной плате
@@ -64,35 +63,34 @@ uint8_t rx_buf[30];
 
 uart1_init(115200, &tx_buf[0], &rx_buf[0]);
 
+for(uint8_t t = 0; t < 15; t++)		{put_byte_UART_1(t);}
+
+
 
 delay_ms(100);
 USART1->DR = 0x48;
 USART2->DR = 0x76;
 USART3->DR = 0x25;
 
-/*
-//	разрешим от данного модуля локальные прерывания – по заполнению приёмного буфера и по ошибке передачи данных
-SET_BIT(USART1->CR1, USART_CR1_RXNEIE);
-SET_BIT(USART1->CR3, USART_CR3_EIE);
-*/
+
 
 
 //GPIOC->BSRR = GPIO_BSRR_BS13;		//	установить нулевой бит		(выключить светодиод)
 //GPIOC->BRR = ( 1 << 13 );			//	сбросить нулевой бит		(включить светодиод)
-
+uint8_t i = 0;
 	while(1)
 	{
-/*
+
 		port->setPin(13); 					// установка вывода в 1
 		delay_ms(300);
 		port->resetPin(13); 				// сброс вывода
 		delay_ms(300);
 
-		put_byte_UART1(i++);
-		put_byte_UART1(i++);
-		put_byte_UART1(i++);
-		put_byte_UART1(i++);
-*/
+		put_byte_UART_1(i++);
+		put_byte_UART_1(i++);
+		put_byte_UART_1(i++);
+		put_byte_UART_1(i++);
+
 	}
 }
 

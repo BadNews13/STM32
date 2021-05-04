@@ -112,7 +112,7 @@ void DMA1_Init (void)
 	NVIC_EnableIRQ(DMA1_Channel5_IRQn);		//DMA1_Channel5_IRQn interrupt init (USART1_RX)
 }
 
-
+/*
 void DMA1_Channel4_IRQHandler(void)	//	закончилась отправка (TX)
 {
 
@@ -168,7 +168,7 @@ void DMA1_Channel5_IRQHandler(void)	//	закончился прием от ПК
   }
 }
 
-
+*/
 
 
 void put_byte_UART1(uint8_t c)

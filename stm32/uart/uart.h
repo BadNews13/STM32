@@ -32,10 +32,18 @@
 #define INPUT	0
 
 extern "C" {
-void USART1_IRQHandler(void);		//	обработчик прерывания от USART1
+	void USART1_IRQHandler(void);				//	обработчик прерывания от USART1
+	void DMA1_Channel5_IRQHandler(void);		//	rx complete
+	void DMA1_Channel4_IRQHandler(void);		//	tx complete
+	void uart1_init(uint32_t BaudRate, uint8_t *tx_buf, uint8_t *rx_buf);
+	void put_byte_UART_1(uint8_t c);
 
-void uart1_init(uint32_t BaudRate, uint8_t *tx_buf, uint8_t *rx_buf);
+
 }
+
+#define RX_BUFFER_SIZE 128
+#define TX_BUFFER_SIZE 128
+
 
 
 

@@ -203,7 +203,7 @@ void DMA::enable_interrupt(uint8_t interrupt)
 
 
 //	указываем адрес периферии
-void DMA::set_peripheral_adr(uint32_t *peripheral)
+void DMA::set_peripheral_adr(uint8_t *peripheral)
 {
 //	WRITE_REG(DMA1_Channel4->CPAR, (uint32_t)&(USART1->DR));	//	указываем в какую периферию делать транзакцию (в uart)
 	WRITE_REG(DMA1_Channel4->CPAR, (uint32_t)&(peripheral));	//	указываем в какую периферию делать транзакцию (в uart)
