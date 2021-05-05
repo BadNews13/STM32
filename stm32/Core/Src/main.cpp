@@ -65,10 +65,14 @@ uart1->tx_buf_size = 30;
 
 uart1->init();
 
+uart1->dma_init(OUTPUT, &tx_buf[0]);			//	внутри экземпляра создаем обьект DMA для отправки данных
+uart1->dma_init(INPUT, &rx_buf[0]);				//	внутри экземплеяра создаем обьект DMA для приема данных
+
+
 set_ptr_on_obj((uint16_t*)uart1);	//	передаем указатель на обьект в класс (для обработки прерывания через вызов метода)
 
 
-//for(uint8_t t = 0; t < 15; t++)		{uart1->put_byte_UART_1(t);}
+for(uint8_t t = 0; t < 15; t++)		{uart1->put_byte_UART_1(t);}
 
 delay_ms(100);
 USART1->DR = 0x48;
@@ -184,62 +188,13 @@ void GPIO_Init (void)
 
 	SET_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPAEN);				//	enable port A	(запуск тактирование порта A)
 	tmpreg = READ_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPAEN);	//	Delay after an RCC peripheral clock enabling
-
-
-
-/*
-	// Для примера включим светодиод на выводе А9
-	// CNF 00: General purpose output Push-pull
-	CLEAR_BIT	(GPIOA->CRH, GPIO_CRH_CNF9_1);
-	CLEAR_BIT	(GPIOA->CRH, GPIO_CRH_CNF9_0);
-	// MODE 11:	Output mode, max speed 50 MHz
-	SET_BIT	(GPIOA->CRH, GPIO_CRH_MODE9_1);
-	SET_BIT	(GPIOA->CRH, GPIO_CRH_MODE9_0);
-
-	CLEAR_BIT	(GPIOA->BSRR, GPIO_ODR_ODR9);	//	выставляем на выводе лог. 0
-	// конец конфигурирования вывода A9
-*/
-/*
-	// Для примера включим светодиод на выводе А5
-	// CNF 00: General purpose output Push-pull
-	CLEAR_BIT	(GPIOA->CRL, GPIO_CRL_CNF5_1);
-	CLEAR_BIT	(GPIOA->CRL, GPIO_CRL_CNF5_0);
-	// MODE 11:	Output mode, max speed 50 MHz
-	SET_BIT	(GPIOA->CRL, GPIO_CRL_MODE5_1);
-	SET_BIT	(GPIOA->CRL, GPIO_CRL_MODE5_0);
-
-	SET_BIT	(GPIOA->BSRR, GPIO_ODR_ODR5);		//	выставляем на выводе лог. 1 (так мы его выключим)
-
-*/
-
-
-	/*
-	//===================================================
-		SET_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPCEN);				//	enable port C	(запуск тактирование порта A)
-		tmpreg = READ_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPCEN);	//	Delay after an RCC peripheral clock enabling
-
-		// Для примера включим светодиод на выводе С13
-		// CNF 00: General purpose output Push-pull
-		CLEAR_BIT	(GPIOC->CRH, GPIO_CRH_CNF13_1);
-		CLEAR_BIT	(GPIOC->CRH, GPIO_CRH_CNF13_0);
-		// MODE 11:	Output mode, max speed 50 MHz
-		SET_BIT	(GPIOC->CRH, GPIO_CRH_MODE13_1);
-		SET_BIT	(GPIOC->CRH, GPIO_CRH_MODE13_0);
-
-		GPIOC->BSRR = GPIO_BSRR_BR13;		//сбросить нулевой бит
-//		GPIOC->BSRR = GPIO_BSRR_BS13;		//установить нулевой бит
-
- */
-
 }
 
 void SysTick_Init(void)
 {
-
 	  MODIFY_REG(SysTick->LOAD,SysTick_LOAD_RELOAD_Msk,SYSCLOCK / 1000 - 1);
 	  CLEAR_BIT(SysTick->VAL, SysTick_VAL_CURRENT_Msk);
 	  SET_BIT(SysTick->CTRL, SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk | SysTick_CTRL_TICKINT_Msk);
-
 }
 
 extern "C" void SysTick_Handler(void)	//	обработчик прерывания системного счетчика

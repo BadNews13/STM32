@@ -11,9 +11,9 @@
  uint8_t rx_str_1[RX_BUFFER_SIZE];
  uint8_t tx_str_1[TX_BUFFER_SIZE];
 
- //DMA_interrupt_exe
- void (UART::*DMA_interrupt_exe_ptr)(void);	//	создаем указатель, который будет указыватьн на метод обработки прерывания от USART1
- UART *uart1_ptr;						//	создаем указатель, который будет указыватьн на обьект USART1
+
+ void (UART::*DMA_interrupt_exe_ptr)(void);	//	создаем указатель, который будет указывать на метод обработки прерывания от USART1
+ UART *uart1_ptr;							//	создаем указатель, который будет указывать на обьект USART1
 
 
 
@@ -122,7 +122,6 @@ void UART::led_on(void)
 	if (uart1_ptr->USARTx == USART1){
 	GPIOC->BRR = ( 1 << 13 );			//	сбросить нулевой бит		(включить светодиод)
 	}
-
 }
 
 
@@ -135,9 +134,6 @@ UART::~UART() {
 
 void USART1_IRQHandler(void)
 {
-
-//	UART::led_on();
-//	DMA_interrupt_exe
 	(uart1_ptr->*DMA_interrupt_exe_ptr)();
 
 	if(		(READ_BIT(USART1->SR, USART_SR_RXNE) 		== 	(USART_SR_RXNE)) &&			//	Read data register not empty
@@ -249,7 +245,7 @@ void UART::put_byte_UART_1(uint8_t c)
 
 	// записываем байт в буфер
 //	tx_str_1[tx_write_index++] = c;									//	запишем символ в строку (для DMA доступа)
-	this->tx_buf[tx_write_index++] = c;
+	tx_buf[tx_write_index++] = c;
 	if (tx_write_index == TX_BUFFER_SIZE)	{tx_write_index = 0;}	//	если массив закончился, то переходим в начало
 	tx_counter++;													//	увеличим количество байт ожидающих отправку
 
@@ -275,7 +271,7 @@ void UART::put_byte_UART_1(uint8_t c)
 
 		//	Запускаем перенаправление
 		CLEAR_BIT	(DMA1_Channel4->CCR, DMA_CCR4_EN);											//	Disable DMA channel 4
-		WRITE_REG	(DMA1_Channel4->CMAR, (uint32_t)&this->tx_buf[DMA_TX_start_position]);		//	указываем с какого места памяти делать транзакцию (в uart)
+		WRITE_REG	(DMA1_Channel4->CMAR, (uint32_t)&tx_buf[DMA_TX_start_position]);		//	указываем с какого места памяти делать транзакцию (в uart)
 		//	указываем сколько байт надо перенаправить
 		MODIFY_REG		(DMA1_Channel4->CNDTR,											//	Set Number of data to transfer
 											  DMA_CNDTR4_NDT,							//	сбросить оставшееся количетсво байт для передачи
@@ -291,7 +287,6 @@ void UART::put_byte_UART_1(uint8_t c)
 
 void UART::init(void)
 {
-//	DMA_interrupt_exe
 	DMA_interrupt_exe_ptr = &UART::DMA_interrupt_exe;		//	глобальный указатель на метод класса (обработчик прерываний)
 
 	if (USARTx == USART1)	{SET_BIT(RCC->APB2ENR, RCC_APB2ENR_USART1EN);}	//	тактирование периферии UART
@@ -388,7 +383,7 @@ void UART::DMA_interrupt_exe(void)
 {
 
 	led_on();
-/*
+
 	  if(READ_BIT(DMA1->ISR, DMA_ISR_TCIF4) == (DMA_ISR_TCIF4))		//	если передали данные из памяти в периферию
 	  {
 	    WRITE_REG(DMA1->IFCR, DMA_IFCR_CTCIF4);						//	сбросим флаг
@@ -397,15 +392,15 @@ void UART::DMA_interrupt_exe(void)
 	    {
 		  CLEAR_BIT		(DMA1_Channel4->CCR, DMA_CCR4_EN);						//	Disable DMA channel 4
 
-		  usart1.DMA_TX_start_position = usart1.DMA_TX_start_position + DMA_TX_count;
+		 DMA_TX_start_position = DMA_TX_start_position + DMA_TX_count;
 
 
 		  if (DMA_TX_start_position > TX_BUFFER_SIZE)	{DMA_TX_start_position = 0;}
-		  WRITE_REG(DMA1_Channel4->CMAR, (uint32_t)&tx_str_1[DMA_TX_start_position]);		//	указываем с какого места памяти делать транзакцию (в uart)
+		  WRITE_REG(DMA1_Channel4->CMAR, (uint32_t)&tx_buf[DMA_TX_start_position]);		//	указываем с какого места памяти делать транзакцию (в uart)
 
 		  MODIFY_REG	(DMA1_Channel4->CNDTR,										//	Set Number of data to transfer
 												  DMA_CNDTR4_NDT,					//	сбросить <~оставшееся~> количетсво байт для передачи
-												  	  	  	  usart1.tx_counter);	//	записать это значение
+												  	  	  	  	  tx_counter);		//	записать это значение
 		  SET_BIT		(DMA1_Channel4->CCR, DMA_CCR4_EN);  						//	Enable DMA channel 4
 		  tx_counter = 0;
 	    }
@@ -421,7 +416,7 @@ void UART::DMA_interrupt_exe(void)
 			CLEAR_BIT(DMA1_Channel5->CCR, DMA_CCR5_EN);
 		}
 	  }
-*/
+
 }
 
 
