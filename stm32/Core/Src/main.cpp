@@ -30,19 +30,6 @@ int main(void)
 
 	GPIOC->BSRR = GPIO_BSRR_BS13;		//установить нулевой бит
 
- //	DMA1_Init();
-//	USART1_Init();
-
-
-
-
-
-
-
-
-
-
-
 // Пример настройки светодиода на отладочной плате
 GPIO *port = new GPIO(GPIOC); 				//	создаем экземпляр класса, передаем порт GPIOC
 port->pinConf(13, OUTPUT_PUSH_PULL); 		//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
@@ -61,35 +48,49 @@ value = port->getPin (13); // считываем состояние вывода
 uint8_t tx_buf[30];
 uint8_t rx_buf[30];
 
-uart1_init(115200, &tx_buf[0], &rx_buf[0]);
+UART *uart1  = new UART();
 
-for(uint8_t t = 0; t < 15; t++)		{put_byte_UART_1(t);}
+uart1->USARTx = USART1;
+uart1->F_CPU = 72000000;
+uart1->BaudRate = 115200;
+
+uart1->tx_pin = 9;
+uart1->rx_pin = 10;
+
+uart1->rx_buf = &rx_buf[0];
+uart1->rx_buf_size = 30;
+
+uart1->tx_buf = &tx_buf[0];
+uart1->tx_buf_size = 30;
+
+uart1->init();
+
+set_ptr_on_obj((uint16_t*)uart1);	//	передаем указатель на обьект в класс (для обработки прерывания через вызов метода)
 
 
+//for(uint8_t t = 0; t < 15; t++)		{uart1->put_byte_UART_1(t);}
 
 delay_ms(100);
 USART1->DR = 0x48;
 USART2->DR = 0x76;
 USART3->DR = 0x25;
 
-
-
-
 //GPIOC->BSRR = GPIO_BSRR_BS13;		//	установить нулевой бит		(выключить светодиод)
 //GPIOC->BRR = ( 1 << 13 );			//	сбросить нулевой бит		(включить светодиод)
 uint8_t i = 0;
 	while(1)
 	{
-
+/*
 		port->setPin(13); 					// установка вывода в 1
 		delay_ms(300);
 		port->resetPin(13); 				// сброс вывода
 		delay_ms(300);
 
-		put_byte_UART_1(i++);
-		put_byte_UART_1(i++);
-		put_byte_UART_1(i++);
-		put_byte_UART_1(i++);
+		uart1->put_byte_UART_1(i++);
+		uart1->put_byte_UART_1(i++);
+		uart1->put_byte_UART_1(i++);
+		uart1->put_byte_UART_1(i++);
+*/
 
 	}
 }

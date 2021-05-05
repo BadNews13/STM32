@@ -66,8 +66,10 @@ public:
 
 	void set_chanel(DMA_Channel_TypeDef *chanel);	//	выбираем канал
 
-private:
 	DMA_Channel_TypeDef *CHANELx;
+
+private:
+
 	DMA_TypeDef			*DMAx;
 
 protected:

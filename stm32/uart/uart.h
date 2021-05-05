@@ -13,6 +13,18 @@
 #include <dma.h>		//	пока не получается запихнуть его в юарт, т.к. нужно ДВА! обьекта этого класса. Поэтому пока создаем как отдельный обьект внутри данного класса
 #include "stm32f10x.h"
 
+struct usart
+{
+
+};
+
+// нужны статические переменные чтобы работать в прерываннии
+	volatile static uint8_t tx_write_index;			//	количество байт оптравленных в очередь (которые уже отправляются)
+	volatile static uint8_t tx_counter;				//	количество байт, ожидающих отправку
+	volatile static uint8_t DMA_TX_start_position;	//	позиция с которой начнут перенаправлять байты
+	volatile static uint8_t DMA_TX_count;			//	сколько байт перенаправить
+
+
 
 
 
@@ -36,8 +48,8 @@ extern "C" {
 	void DMA1_Channel5_IRQHandler(void);		//	rx complete
 	void DMA1_Channel4_IRQHandler(void);		//	tx complete
 	void uart1_init(uint32_t BaudRate, uint8_t *tx_buf, uint8_t *rx_buf);
-	void put_byte_UART_1(uint8_t c);
-
+//	void put_byte_UART_1(uint8_t c);
+	void set_ptr_on_obj(uint16_t *_ptr);
 
 }
 
@@ -49,7 +61,8 @@ extern "C" {
 
 	class UART : GPIO, DMA {
 public:
-	UART(USART_TypeDef *uart, uint32_t BaudRate);
+	UART();											//	конструктор 1
+	UART(USART_TypeDef *uart, uint32_t BaudRate);	//	конструктор 2
 	virtual ~UART();
 
 	void DMA_TX_init();
@@ -57,12 +70,36 @@ public:
 
 	void dma_init(uint8_t direct, uint8_t *buf);								//	конфигурирует канал DMA (исользовать для TX и RX)
 
-	static void led_on(void);
+	/*static*/ void led_on(void);
+
+	void put_byte_UART_1(uint8_t c);
 
 
+	void init(void);
+	void put_byte(uint8_t byte);
+	void DMA_interrupt_exe(void);
+
+
+
+
+	uint32_t F_CPU;									//	частота тактирования микроконтроллера
+	uint32_t BaudRate;								//	скорость передачи данных по uart
+
+	uint8_t tx_pin;
+	uint8_t rx_pin;
+
+	uint8_t *tx_buf;								//	указатель на буфер отправки
+	uint8_t *rx_buf;								//	указатель на буфер приема
+
+	uint8_t tx_buf_size;							//	размер буфера отправки
+	uint8_t rx_buf_size; 							//	размер буфера приема
+
+
+
+	USART_TypeDef 	*USARTx;
 
 private:
-	USART_TypeDef 	*USARTx;
+
 
 };
 
