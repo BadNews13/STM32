@@ -230,7 +230,7 @@ void UART::put_byte_UART_1(uint8_t c)
 			}
 			else							//	переход на пакете
 			{
-				DMA_TX_start_position = 	tx_buf_size - (tx_counter - tx_write_index);	//	считаем стартовую позицию	//	узнаем индекс начала пакета в буфере
+				DMA_TX_start_position = 	tx_buf_size - (tx_counter - tx_write_index)-1;	//	считаем стартовую позицию	//	узнаем индекс начала пакета в буфере
 				DMA_TX_count = 				tx_counter - tx_write_index;					//	только до конца буфера		// узнаем сколько байт лежит до конца буфера
 				tx_counter = 				tx_counter - DMA_TX_count;						//	срезаем с счетчика отправлямое количество
 			}
@@ -241,19 +241,20 @@ void UART::put_byte_UART_1(uint8_t c)
 			DMA_TX_count = 				tx_counter;									//	считаем сколько байт надо перенаправить сейчас
 			tx_counter = 				0;											//	считаем остаток
 		}
-/*
-		for (uint8_t i = 0; i<5; i++)	{}	//	нужна задержка, иначе проскакивают двойные байты (кастыль)
+		/*
+		for (uint8_t i = 0; i<5; i++)	{}	//	нужна задержка если через вызов метода выполнять запуск DMA, иначе проскакивают двойные байты (кастыль)
 		DMA_transaction(&tx_buf[DMA_TX_start_position], DMA_TX_count);
-	*/
+		*/
 
+//	чтобы обойтись без кастыля, то используем код из этого метода
 		//	Запускаем перенаправление
-		CLEAR_BIT	(DMA1_Channel4->CCR, DMA_CCR4_EN);					//	Disable DMA channel 4
-		WRITE_REG	(DMA1_Channel4->CMAR, (uint32_t)&tx_buf[DMA_TX_start_position]);			//	указываем с какого места памяти делать транзакцию (в uart)
+		CLEAR_BIT	(DMA1_Channel4->CCR, DMA_CCR4_EN);							//	Disable DMA channel 4
+		WRITE_REG	(DMA1_Channel4->CMAR, (uint32_t)&tx_buf[DMA_TX_start_position]);	//	указываем с какого места памяти делать транзакцию (в uart)
 		//	указываем сколько байт надо перенаправить
-		MODIFY_REG		(DMA1_Channel4->CNDTR,							//	Set Number of data to transfer
-											  DMA_CNDTR4_NDT,			//	сбросить оставшееся количетсво байт для передачи
-											  DMA_TX_count);		//	записать это значение
-		SET_BIT			(DMA1_Channel4->CCR, DMA_CCR4_EN);  			//	Enable DMA channel 4
+		MODIFY_REG	(DMA1_Channel4->CNDTR,										//	Set Number of data to transfer
+											DMA_CNDTR4_NDT,						//	сбросить оставшееся количетсво байт для передачи
+											  	  	  	  	  DMA_TX_count);	//	записать это значение
+		SET_BIT		(DMA1_Channel4->CCR, DMA_CCR4_EN);  						//	Enable DMA channel 4
 
 	}
 }
@@ -356,7 +357,17 @@ void UART::DMA_interrupt_exe(void)
 				}
 			}
 
-			DMA_transaction(&tx_buf[DMA_TX_start_position], DMA_TX_count);			//	отправляем
+//			DMA_transaction(&tx_buf[DMA_TX_start_position], DMA_TX_count);			//	отправляем
+
+			//	чтобы обойтись без кастыля, то используем код из этого метода
+					//	Запускаем перенаправление
+					CLEAR_BIT	(DMA1_Channel4->CCR, DMA_CCR4_EN);							//	Disable DMA channel 4
+					WRITE_REG	(DMA1_Channel4->CMAR, (uint32_t)&tx_buf[DMA_TX_start_position]);	//	указываем с какого места памяти делать транзакцию (в uart)
+					//	указываем сколько байт надо перенаправить
+					MODIFY_REG	(DMA1_Channel4->CNDTR,										//	Set Number of data to transfer
+														DMA_CNDTR4_NDT,						//	сбросить оставшееся количетсво байт для передачи
+														  	  	  	  	  DMA_TX_count);	//	записать это значение
+					SET_BIT		(DMA1_Channel4->CCR, DMA_CCR4_EN);  						//	Enable DMA channel 4
 		}
 		else    {CLEAR_BIT(DMA1_Channel4->CCR, DMA_CCR4_EN);}					//	Disable DMA channels 4 // если больше нечего отправлять
 
