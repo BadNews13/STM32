@@ -90,10 +90,10 @@ uint8_t i = 0;
 		port->resetPin(13); 				// сброс вывода
 		delay_ms(300);
 
-		uart1->put_byte_UART_1(i++);
-		uart1->put_byte_UART_1(i++);
-		uart1->put_byte_UART_1(i++);
-		uart1->put_byte_UART_1(i++);
+		uart1->put_byte_UART_1(1);
+		uart1->put_byte_UART_1(2);
+		uart1->put_byte_UART_1(3);
+		uart1->put_byte_UART_1(4);
 	}
 }
 

@@ -207,12 +207,12 @@ void DMA1_Channel5_IRQHandler(void)	//	закончился прием от ПК
 
 void UART::put_byte_UART_1(uint8_t c)
 {
-	__disable_irq (); // запретить прерывания
+	__disable_irq (); // запретить прерывания		(tx_counter может измениться в прерывании)
 	// записываем байт в буфер
 	tx_buf[tx_write_index++] = c;								//	запишем символ в строку (для DMA доступа)
 	if (tx_write_index == tx_buf_size)	{tx_write_index = 0;}	//	если массив закончился, то переходим в начало
 	tx_counter++;												//	увеличим количество байт ожидающих отправку
-	__enable_irq ();  // разрешить прерывания
+	__enable_irq ();  // разрешить прерывания		(лучше в конце всей функции поставить, но пока попробуем так)
 
 	//	Если идет передача
 	if (READ_REG(DMA_CNDTR4_NDT)&&READ_BIT(DMA1_Channel4->CCR, DMA_CCR4_EN) == (DMA_CCR4_EN))//	если мы еще прошлые байты не отправили и если канал открыт
@@ -325,21 +325,15 @@ void UART::DMA_interrupt_exe(void)
 {
 	if(READ_BIT(DMA1->ISR, DMA_ISR_TCIF4) == (DMA_ISR_TCIF4))		//	если передали данные из памяти в периферию
 	{
-		WRITE_REG(DMA1->IFCR, DMA_IFCR_CTCIF4);						//	сбросим флаг
-
 		// узнаем докинули ли нам еще байт пока отправляли
 		// или же мы просто обрабатываем переход кольцевого буфера к началу
 		if (tx_counter)
 		{
 			if (tx_write_index >= tx_counter)	//	перехода не было // пакет лежит в между началом и концом буфера
 			{
-				//	узнаем начало
-				//	узнаем количество на отправку
-				//	срезаем с счетчика
-
-				DMA_TX_start_position = 	tx_write_index - tx_counter;				//	считаем стартовую позицию
-				DMA_TX_count = 				tx_counter;									//	считаем сколько байт надо перенаправить сейчас
-				tx_counter = 				0;											//	считаем остаток
+				DMA_TX_start_position = 	tx_write_index - tx_counter;	//	считаем стартовую позицию
+				DMA_TX_count = 				tx_counter;						//	считаем сколько байт надо перенаправить сейчас
+				tx_counter = 				0;								//	считаем остаток
 			}
 
 			if (tx_write_index < tx_counter)
@@ -358,20 +352,19 @@ void UART::DMA_interrupt_exe(void)
 				}
 			}
 
-//			DMA_transaction(&tx_buf[DMA_TX_start_position], DMA_TX_count);			//	отправляем
+			//			DMA_transaction(&tx_buf[DMA_TX_start_position], DMA_TX_count);			//	отправляем
 
 			//	чтобы обойтись без кастыля, то используем код из этого метода
-					//	Запускаем перенаправление
-					CLEAR_BIT	(DMA1_Channel4->CCR, DMA_CCR4_EN);							//	Disable DMA channel 4
-					WRITE_REG	(DMA1_Channel4->CMAR, (uint32_t)&tx_buf[DMA_TX_start_position]);	//	указываем с какого места памяти делать транзакцию (в uart)
-					//	указываем сколько байт надо перенаправить
-					MODIFY_REG	(DMA1_Channel4->CNDTR,										//	Set Number of data to transfer
-														DMA_CNDTR4_NDT,						//	сбросить оставшееся количетсво байт для передачи
-														  	  	  	  	  DMA_TX_count);	//	записать это значение
-					SET_BIT		(DMA1_Channel4->CCR, DMA_CCR4_EN);  						//	Enable DMA channel 4
+			//	Запускаем перенаправление
+			CLEAR_BIT	(DMA1_Channel4->CCR, DMA_CCR4_EN);						//	Disable DMA channel 4
+			WRITE_REG	(DMA1_Channel4->CMAR, (uint32_t)&tx_buf[DMA_TX_start_position]);	//	указываем с какого места памяти делать транзакцию (в uart)
+			//	указываем сколько байт надо перенаправить
+			MODIFY_REG	(DMA1_Channel4->CNDTR,									//	Set Number of data to transfer
+												DMA_CNDTR4_NDT,					//	сбросить оставшееся количетсво байт для передачи
+																DMA_TX_count);	//	записать это значение
+			SET_BIT		(DMA1_Channel4->CCR, DMA_CCR4_EN);  					//	Enable DMA channel 4
 		}
 		else    {CLEAR_BIT(DMA1_Channel4->CCR, DMA_CCR4_EN);}					//	Disable DMA channels 4 // если больше нечего отправлять
-
 	}
 
 
@@ -381,6 +374,8 @@ void UART::DMA_interrupt_exe(void)
 		CLEAR_BIT(DMA1_Channel4->CCR, DMA_CCR4_EN);
 		CLEAR_BIT(DMA1_Channel5->CCR, DMA_CCR5_EN);
 	}
+
+	WRITE_REG(DMA1->IFCR, DMA_IFCR_CTCIF4);				//	сбросим флаг этого прерывания
 }
 
 
