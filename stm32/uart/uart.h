@@ -18,11 +18,6 @@ struct usart
 
 };
 
-// нужны статические переменные чтобы работать в прерываннии
-	volatile static uint8_t tx_write_index;			//	количество байт оптравленных в очередь (которые уже отправляются)
-	volatile static uint8_t tx_counter;				//	количество байт, ожидающих отправку
-	volatile static uint8_t DMA_TX_start_position;	//	позиция с которой начнут перенаправлять байты
-	volatile static uint8_t DMA_TX_count;			//	сколько байт перенаправить
 
 
 
@@ -47,8 +42,6 @@ extern "C" {
 	void USART1_IRQHandler(void);				//	обработчик прерывания от USART1
 	void DMA1_Channel5_IRQHandler(void);		//	rx complete
 	void DMA1_Channel4_IRQHandler(void);		//	tx complete
-	void uart1_init(uint32_t BaudRate, uint8_t *tx_buf, uint8_t *rx_buf);
-//	void put_byte_UART_1(uint8_t c);
 	void set_ptr_on_obj(uint16_t *_ptr);
 
 }
@@ -76,8 +69,8 @@ public:
 
 
 	void init(void);
-	void put_byte(uint8_t byte);
 	void DMA_interrupt_exe(void);
+	void DMA_transaction(uint8_t *buf, uint8_t cnt);
 
 
 
@@ -94,6 +87,11 @@ public:
 	uint8_t tx_buf_size;							//	размер буфера отправки
 	uint8_t rx_buf_size; 							//	размер буфера приема
 
+	// нужны статические переменные чтобы работать в прерываннии
+		volatile  uint8_t tx_write_index;			//	количество байт оптравленных в очередь (которые уже отправляются)
+		volatile  uint8_t tx_counter;				//	количество байт, ожидающих отправку
+		volatile  uint8_t DMA_TX_start_position;	//	позиция с которой начнут перенаправлять байты
+		volatile  uint8_t DMA_TX_count;				//	сколько байт перенаправить
 
 
 	USART_TypeDef 	*USARTx;

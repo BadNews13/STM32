@@ -45,14 +45,14 @@ value = port->getPin (13); // считываем состояние вывода
 //UART *uart3 = new UART(USART3, 115200);
 
 
-uint8_t tx_buf[30];
-uint8_t rx_buf[30];
+uint8_t tx_buf[255];
+uint8_t rx_buf[255];
 
 UART *uart1  = new UART();
 
 uart1->USARTx = USART1;
 uart1->F_CPU = 72000000;
-uart1->BaudRate = 115200;
+uart1->BaudRate = 9600; 	//	 115200;
 
 uart1->tx_pin = 9;
 uart1->rx_pin = 10;
@@ -73,6 +73,7 @@ set_ptr_on_obj((uint16_t*)uart1);	//	передаем указатель на о
 
 
 for(uint8_t t = 0; t < 15; t++)		{uart1->put_byte_UART_1(t);}
+//for(uint8_t t = 0; t < 13; t++)		{uart1->put_byte_UART_1(t);}
 
 delay_ms(100);
 USART1->DR = 0x48;
@@ -84,7 +85,6 @@ USART3->DR = 0x25;
 uint8_t i = 0;
 	while(1)
 	{
-/*
 		port->setPin(13); 					// установка вывода в 1
 		delay_ms(300);
 		port->resetPin(13); 				// сброс вывода
@@ -94,8 +94,6 @@ uint8_t i = 0;
 		uart1->put_byte_UART_1(i++);
 		uart1->put_byte_UART_1(i++);
 		uart1->put_byte_UART_1(i++);
-*/
-
 	}
 }
 
