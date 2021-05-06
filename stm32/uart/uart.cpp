@@ -207,10 +207,12 @@ void DMA1_Channel5_IRQHandler(void)	//	закончился прием от ПК
 
 void UART::put_byte_UART_1(uint8_t c)
 {
+	__disable_irq (); // запретить прерывания
 	// записываем байт в буфер
 	tx_buf[tx_write_index++] = c;								//	запишем символ в строку (для DMA доступа)
 	if (tx_write_index == tx_buf_size)	{tx_write_index = 0;}	//	если массив закончился, то переходим в начало
 	tx_counter++;												//	увеличим количество байт ожидающих отправку
+	__enable_irq ();  // разрешить прерывания
 
 	//	Если идет передача
 	if (READ_REG(DMA_CNDTR4_NDT)&&READ_BIT(DMA1_Channel4->CCR, DMA_CCR4_EN) == (DMA_CCR4_EN))//	если мы еще прошлые байты не отправили и если канал открыт
@@ -231,8 +233,8 @@ void UART::put_byte_UART_1(uint8_t c)
 			else							//	переход на пакете
 			{
 				DMA_TX_start_position = 	tx_buf_size - (tx_counter - tx_write_index)-1;	//	считаем стартовую позицию	//	узнаем индекс начала пакета в буфере
-				DMA_TX_count = 				tx_counter - tx_write_index;					//	только до конца буфера		// узнаем сколько байт лежит до конца буфера
-				tx_counter = 				tx_counter - DMA_TX_count;						//	срезаем с счетчика отправлямое количество
+				DMA_TX_count = 				tx_counter - tx_write_index-1;					//	только до конца буфера		// узнаем сколько байт лежит до конца буфера
+				tx_counter = 				tx_counter - DMA_TX_count+1;						//	срезаем с счетчика отправлямое количество
 			}
 		}
 		else								//	перехода не было
@@ -255,7 +257,6 @@ void UART::put_byte_UART_1(uint8_t c)
 											DMA_CNDTR4_NDT,						//	сбросить оставшееся количетсво байт для передачи
 											  	  	  	  	  DMA_TX_count);	//	записать это значение
 		SET_BIT		(DMA1_Channel4->CCR, DMA_CCR4_EN);  						//	Enable DMA channel 4
-
 	}
 }
 
