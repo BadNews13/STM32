@@ -17,8 +17,29 @@
 #include <uart.h>
 extern "C" {
 #include "../../uart_1/uart_1.h"
+void TIM2_IRQHandler(void);
+#define TIM1_BRK_TIM15_IRQn TIM1_BRK_IRQn
+#define TIM1_BRK_IRQn 24
 }
 
+UART * init_uart1(USART_TypeDef *USARTx, uint8_t *tx_buf, uint8_t *rx_buf, uint32_t BaudRate);
+void timer2_ini (void);
+
+
+
+
+#define TIM1_CH1N_PB        13
+#define TIM1_CH1_PA         8
+#define TIM1_CH2_PA         9
+
+#define PWM_VALUE           20
+#define TMR_T               200
+
+#define DEADTIME            20
+
+#define PP_MODE
+//#define COMPL_MODE
+void init_PP_MODE (void);
 
 int main(void)
 {
@@ -31,74 +52,52 @@ int main(void)
 	GPIOC->BSRR = GPIO_BSRR_BS13;		//установить нулевой бит
 
 // Пример настройки светодиода на отладочной плате
-GPIO *port = new GPIO(GPIOC); 				//	создаем экземпляр класса, передаем порт GPIOC
-port->pinConf(13, OUTPUT_PUSH_PULL); 		//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
-port->setPin(13); 							//	установка вывода в 1
+GPIO *port_C = new GPIO(GPIOC); 				//	создаем экземпляр класса, передаем порт GPIOC
+port_C->pinConf(13, OUTPUT_PUSH_PULL); 		//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
+port_C->setPin(13); 							//	установка вывода в 1
 //port->resetPin(13); 						//	сброс вывода
 /*
 int value;
 value = port->getPin (13); // считываем состояние вывода
 */
 
-//UART *uart1 = new UART(USART1, 115200);
-//UART *uart2 = new UART(USART2, 115200);
-//UART *uart3 = new UART(USART3, 115200);
-
-
-uint8_t tx_buf[255];
-uint8_t rx_buf[255];
-
-UART *uart1  = new UART();
-
-uart1->USARTx = USART1;
-uart1->F_CPU = 72000000;
-uart1->BaudRate = 9600; 	//	 115200;
-
-uart1->tx_pin = 9;
-uart1->rx_pin = 10;
-
-uart1->rx_buf = &rx_buf[0];
-uart1->rx_buf_size = 30;
-
-uart1->tx_buf = &tx_buf[0];
-uart1->tx_buf_size = 30;
-
-uart1->init();
-
-uart1->dma_init(OUTPUT, &tx_buf[0]);			//	внутри экземпляра создаем обьект DMA для отправки данных
-uart1->dma_init(INPUT, &rx_buf[0]);				//	внутри экземплеяра создаем обьект DMA для приема данных
-
-
-set_ptr_on_obj((uint16_t*)uart1);	//	передаем указатель на обьект в класс (для обработки прерывания через вызов метода)
-
-
-for(uint8_t t = 0; t < 15; t++)		{uart1->put_byte_UART_1(t);}
-//for(uint8_t t = 0; t < 13; t++)		{uart1->put_byte_UART_1(t);}
-
-delay_ms(100);
+/*
+uint8_t tx_buf[30];
+uint8_t rx_buf[30];
+UART *uart1 = init_uart1(USART1, &tx_buf[0], &rx_buf[0], 9600);
 USART1->DR = 0x48;
-USART2->DR = 0x76;
-USART3->DR = 0x25;
+for(uint8_t t = 0; t < 15; t++)		{uart1->put_byte_UART_1(t);}
+*/
+
+timer2_ini();
+
+
+
+// A8 работает корректно
+// A9 импульсы идут пачками
+init_PP_MODE();
+
+
+
 
 //GPIOC->BSRR = GPIO_BSRR_BS13;		//	установить нулевой бит		(выключить светодиод)
 //GPIOC->BRR = ( 1 << 13 );			//	сбросить нулевой бит		(включить светодиод)
 uint8_t i = 0;
 	while(1)
 	{
-		port->setPin(13); 					// установка вывода в 1
+		/*
+	//	port->setPin(13); 					// установка вывода в 1
 		delay_ms(300);
-		port->resetPin(13); 				// сброс вывода
+	//	port->resetPin(13); 				// сброс вывода
 		delay_ms(300);
 
 		uart1->put_byte_UART_1(1);
 		uart1->put_byte_UART_1(2);
 		uart1->put_byte_UART_1(3);
 		uart1->put_byte_UART_1(4);
+		*/
 	}
 }
-
-
-
 
 
 void RCC_DeInit(void)
@@ -208,3 +207,136 @@ void delay_ms(uint32_t ms)
 }
 
 
+
+UART * init_uart1(USART_TypeDef *USARTx, uint8_t *tx_buf, uint8_t *rx_buf, uint32_t BaudRate)
+{
+	UART *uart  = new UART();
+
+	uart->USARTx = USARTx;
+	uart->F_CPU = 72000000;
+	uart->BaudRate = BaudRate;
+
+	if	(USARTx == USART1)	{RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;	uart->tx_pin = 9;	uart->rx_pin = 10;}
+	if	(USARTx == USART2)	{RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;	uart->tx_pin = 2;	uart->rx_pin = 3;}
+	if	(USARTx == USART3)	{RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;	uart->tx_pin = 2;	uart->rx_pin = 3;}
+
+	uart->rx_buf = &rx_buf[0];
+	uart->rx_buf_size = 30;
+
+	uart->tx_buf = &tx_buf[0];
+	uart->tx_buf_size = 30;
+
+	uart->init();
+
+	uart->dma_init(OUTPUT, &tx_buf[0]);			//	внутри экземпляра создаем обьект DMA для отправки данных
+	uart->dma_init(INPUT, &rx_buf[0]);			//	внутри экземплеяра создаем обьект DMA для приема данных
+
+	set_ptr_on_obj((uint16_t*)uart);			//	передаем указатель на обьект в класс (для обработки прерывания через вызов метода)
+
+	return uart;
+}
+
+
+
+void timer2_ini (void)
+{
+	RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;//Тактирование таймера TIM2
+
+	TIM2->PSC = 72000000 / 1000 - 1; 		//	1000 tick/sec				//	Настройка предделителя таймера
+	TIM2->ARR = 5000;  						//	1 Interrupt/sec (1000/100)	//	Загружаем число миллисекунд в регистр автоперезагрузки
+	TIM2->DIER |= TIM_DIER_UIE; 			//	Enable tim2 interrupt		//	Разрешаем прерывание при переполнении счетчика
+	TIM2->CR1 |= TIM_CR1_CEN;   			//	Start count					//	Запускаем счет
+
+	NVIC_EnableIRQ(TIM2_IRQn);  			//	Enable IRQ
+}
+
+
+void TIM2_IRQHandler(void)
+{
+	static uint8_t i=0;
+	TIM2->SR &= ~TIM_SR_UIF; 										//	Clean UIF Flag
+	if (1 == (i++ & 0x1))		{GPIOC->BSRR = GPIO_BSRR_BS13;}		//	установить нулевой бит		(выключить светодиод)
+	else						{GPIOC->BRR = ( 1 << 13 );}			//	сбросить нулевой бит		(включить светодиод)
+
+
+}
+
+
+extern "C" void TIM1_UP_TIM16_IRQHandler()
+{
+    // Этот обработчик может обслуживать разные прерывания, поэтому,
+    // сначала выясняем причину прерывания, затем выполняем
+    // соответствующий ситуации код.
+    if(TIM1->SR&TIM_SR_UIF)
+    {
+        // Сбрасываем флаг записью 0, те биты регистра SR, в которые
+        // запишем 1, не изменятся.
+        TIM1->SR=~TIM_SR_UIF;
+
+        // Выполняем действия...
+    }
+}
+
+
+
+void init_PP_MODE (void)
+{
+    RCC->APB2ENR|=RCC_APB2ENR_IOPAEN | RCC_APB2ENR_IOPBEN | RCC_APB2ENR_IOPCEN | RCC_APB2ENR_TIM1EN;
+/*
+    GPIOA->CRH = SET_CRH(TIM1_CH1_PA,M_OUT_50M,OUT_AF_PP) | SET_CRH(TIM1_CH2_PA,M_OUT_50M,OUT_AF_PP);
+    GPIOB->CRH = SET_CRH(TIM1_CH1N_PB,M_OUT_50M,OUT_AF_PP);
+*/
+
+    GPIO *port_A = new GPIO(GPIOA); 				//	создаем экземпляр класса, передаем порт GPIOC
+
+//    port_A->enablePORT(GPIOA);
+    port_A->pinConf(TIM1_CH1_PA, AF_PUSH_PULL); 		//	задаем режим выход пуш-пул
+    port_A->setPin(TIM1_CH1_PA); 							//	установка вывода в 1
+
+    port_A->pinConf(TIM1_CH2_PA, AF_PUSH_PULL); 		//	задаем режим выход пуш-пул
+    port_A->setPin(TIM1_CH2_PA); 							//	установка вывода в 1
+
+
+#ifdef PP_MODE
+    //CH1: PWM mode 2, CH2: PWM mode 1, preload enabled on all channels
+    TIM1->CCMR1=
+    		TIM_CCMR1_OC1M_2 |		//	Bit 6	OC1M: 	Output Compare 1 mode
+			TIM_CCMR1_OC1M_1 |		//	Bit 5	OC1M: 	Output Compare 1 mode
+			TIM_CCMR1_OC1M_0 |		//	Bit 4	OC1M: 	Output Compare 1 mode
+			TIM_CCMR1_OC1PE |		//	Bit 3	OC1PE:	Output Compare 1 preload enable
+			TIM_CCMR1_OC2M_2 |		//	Bit 14	OC2M:	Output Compare 2 mode
+			TIM_CCMR1_OC2M_1 |		//	Bit 13	OC2M:	Output Compare 2 mode
+			TIM_CCMR1_OC2PE;		//	Bit 11 	OC2PE:	Output Compare 2 preload enable
+
+    TIM1->CCER=
+    		TIM_CCER_CC1E |			//	Bit 0	CC1E:	Capture/Compare 1 output enable	(выводит сигнал на пин)
+			TIM_CCER_CC2E;			//	Bit 4	CC2E:	Capture/Compare 2 output enable
+
+    TIM1->BDTR=TIM_BDTR_MOE;		//	Bit 15	MOE:	Main output enable
+
+    TIM1->CCR1=TMR_T - PWM_VALUE;	//	до куда считает канал 1
+    TIM1->CCR2=PWM_VALUE;			//	до куда считает канал 2
+
+    TIM1->ARR=TMR_T;				//	значение на котором перезагружаем отсчет
+
+    TIM1->CR1=
+    		TIM_CR1_ARPE |			//	Bit 7	ARPE:	Auto-reload preload enable
+			TIM_CR1_CMS_1 |			//	Bits 6	CMS:	Center-aligned mode selection (выравнивание по центру)
+			TIM_CR1_CMS_0;			//	Bits 6	CMS:	Center-aligned mode selection
+
+    TIM1->CR1|=TIM_CR1_CEN;			//	Bit 0	CEN:	Counter enable	(обязательно в последнюю очеред записывать этот бит)
+    TIM1->EGR=TIM_EGR_UG;			//	Bit 0	UG:		Update generation	(обновляем регситры)
+#endif
+
+#ifdef COMPL_MODE
+    //CH1: PWM mode with complementary output & deadtime
+    TIM1->CCMR1=TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1PE;
+    TIM1->CCER=TIM_CCER_CC1E | TIM_CCER_CC1NE;
+    TIM1->BDTR=TIM_BDTR_MOE | DEADTIME;
+    TIM1->CCR1=PWM_VALUE;
+    TIM1->ARR=TMR_T;
+    TIM1->CR1=TIM_CR1_ARPE;
+    TIM1->CR1|=TIM_CR1_CEN;
+    TIM1->EGR=TIM_EGR_UG;
+#endif
+}

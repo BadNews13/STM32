@@ -37,6 +37,7 @@ class GPIO {
 	void setPin		( uint8_t pin_nomber ); // установить 1 на пине
 	void resetPin	( uint8_t pin_nomber ); // сбросить пин
 	int getPin 		( uint8_t pin_nomber ); // считываем состояние пина (reg. IDR)
+	void enablePORT	( GPIO_TypeDef *port );
 
 //	virtual ~GPIO();
 
@@ -46,7 +47,7 @@ class GPIO {
 	int pin_m;
 
 	protected:
-	void enablePORT(GPIO_TypeDef *port);
+
 
 
 };

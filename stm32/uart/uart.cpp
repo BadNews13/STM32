@@ -23,7 +23,6 @@
  }
 
 
-
 UART::UART(USART_TypeDef *uart, uint32_t BaudRate) : GPIO(), DMA(){
 	uint32_t F_CPU = 72000000;
 	this->USARTx = uart;
@@ -208,6 +207,7 @@ void DMA1_Channel5_IRQHandler(void)	//	закончился прием от ПК
 void UART::put_byte_UART_1(uint8_t c)
 {
 	__disable_irq (); // запретить прерывания		(tx_counter может измениться в прерывании)
+
 	// записываем байт в буфер
 	tx_buf[tx_write_index++] = c;								//	запишем символ в строку (для DMA доступа)
 	if (tx_write_index == tx_buf_size)	{tx_write_index = 0;}	//	если массив закончился, то переходим в начало
@@ -260,8 +260,8 @@ void UART::put_byte_UART_1(uint8_t c)
 		SET_BIT		(DMA1_Channel4->CCR, DMA_CCR4_EN);  						//	Enable DMA channel 4
 
 	}
-	__enable_irq ();  // разрешить прерывания		(лучше в конце всей функции поставить, но пока попробуем так)
 
+	__enable_irq ();  // разрешить прерывания
 }
 
 
