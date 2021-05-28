@@ -28,18 +28,19 @@ void timer2_ini (void);
 
 
 
-#define TIM1_CH1N_PB        13
+
 #define TIM1_CH1_PA         8
 #define TIM1_CH2_PA         9
 
-#define PWM_VALUE           20
-#define TMR_T               200
+#define PWM_VALUE          143		//	(144) 20		//	ширина импульса		50 	( не должно быть больше половины частоты, иначе будет сквозной ток)
+#define TMR_T               287		//	200		//	частота				287 = 125kHz
 
-#define DEADTIME            20
+#define DEADTIME            20		//	20
 
 #define PP_MODE
 //#define COMPL_MODE
 void init_PP_MODE (void);
+
 
 int main(void)
 {
@@ -79,10 +80,27 @@ init_PP_MODE();
 
 
 
+GPIO *port_A = new GPIO(GPIOA); 				//	создаем экземпляр класса, передаем порт GPIOC
+port_A->pinConf(0, OUTPUT_PUSH_PULL); 			//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
+port_A->resetPin(0); 							//	установка вывода в 1
+
+port_A->pinConf(1, OUTPUT_PUSH_PULL); 			//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
+port_A->resetPin(1); 							//	установка вывода в 1
+
+port_A->pinConf(2, OUTPUT_PUSH_PULL); 			//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
+port_A->resetPin(2); 							//	установка вывода в 1
+
+port_A->pinConf(3, OUTPUT_PUSH_PULL); 			//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
+port_A->resetPin(3); 							//	установка вывода в 1
+
 
 //GPIOC->BSRR = GPIO_BSRR_BS13;		//	установить нулевой бит		(выключить светодиод)
 //GPIOC->BRR = ( 1 << 13 );			//	сбросить нулевой бит		(включить светодиод)
-uint8_t i = 0;
+
+
+uint8_t i = 1;
+uint8_t k = 1;
+
 	while(1)
 	{
 		/*
@@ -96,6 +114,81 @@ uint8_t i = 0;
 		uart1->put_byte_UART_1(3);
 		uart1->put_byte_UART_1(4);
 		*/
+
+/*
+		port_A->setPin(0);
+		port_A->setPin(2);
+		delay_ms(3);
+		port_A->resetPin(0);
+		port_A->resetPin(2);
+
+		port_A->setPin(1);
+		port_A->setPin(3);
+		delay_ms(3);
+		port_A->resetPin(1);
+		port_A->resetPin(3);
+*/
+
+		delay_ms(i);
+
+		port_A->setPin(0);			//	1000
+
+		delay_ms(k);
+
+		port_A->resetPin(3);		//	1000
+
+		delay_ms(i);
+
+		port_A->setPin(1);			//	1100
+
+		delay_ms(k);
+
+		port_A->resetPin(0);		//	0100
+
+		delay_ms(i);
+
+		port_A->setPin(2);			//	0110
+
+		delay_ms(k);
+
+		port_A->resetPin(1);		//	0010
+
+		delay_ms(i);
+
+		port_A->setPin(3);			//	0011
+
+		delay_ms(k);
+
+		port_A->resetPin(2);		//	0001
+
+
+
+
+
+
+
+
+
+		/*
+		port_A->setPin(0);
+		delay_ms(3);
+		port_A->resetPin(0);
+
+		port_A->setPin(1);
+		delay_ms(3);
+		port_A->resetPin(1);
+
+
+		port_A->setPin(2);
+		delay_ms(3);
+		port_A->resetPin(2);
+
+
+		port_A->setPin(3);
+		delay_ms(3);
+		port_A->resetPin(3);
+*/
+
 	}
 }
 
@@ -289,7 +382,6 @@ void init_PP_MODE (void)
 
     GPIO *port_A = new GPIO(GPIOA); 				//	создаем экземпляр класса, передаем порт GPIOC
 
-//    port_A->enablePORT(GPIOA);
     port_A->pinConf(TIM1_CH1_PA, AF_PUSH_PULL); 		//	задаем режим выход пуш-пул
     port_A->setPin(TIM1_CH1_PA); 							//	установка вывода в 1
 
@@ -312,20 +404,21 @@ void init_PP_MODE (void)
     		TIM_CCER_CC1E |			//	Bit 0	CC1E:	Capture/Compare 1 output enable	(выводит сигнал на пин)
 			TIM_CCER_CC2E;			//	Bit 4	CC2E:	Capture/Compare 2 output enable
 
-    TIM1->BDTR=TIM_BDTR_MOE;		//	Bit 15	MOE:	Main output enable
+    TIM1->BDTR=	TIM_BDTR_MOE;		//	Bit 15	MOE:	Main output enable
 
-    TIM1->CCR1=TMR_T - PWM_VALUE;	//	до куда считает канал 1
-    TIM1->CCR2=PWM_VALUE;			//	до куда считает канал 2
+    TIM1->CCR1=	TMR_T - PWM_VALUE;	//	до куда считает канал 1
+    TIM1->CCR2=	PWM_VALUE;			//	до куда считает канал 2
 
-    TIM1->ARR=TMR_T;				//	значение на котором перезагружаем отсчет
+    TIM1->ARR=	TMR_T;				//	значение на котором перезагружаем отсчет
 
     TIM1->CR1=
     		TIM_CR1_ARPE |			//	Bit 7	ARPE:	Auto-reload preload enable
 			TIM_CR1_CMS_1 |			//	Bits 6	CMS:	Center-aligned mode selection (выравнивание по центру)
 			TIM_CR1_CMS_0;			//	Bits 6	CMS:	Center-aligned mode selection
 
-    TIM1->CR1|=TIM_CR1_CEN;			//	Bit 0	CEN:	Counter enable	(обязательно в последнюю очеред записывать этот бит)
-    TIM1->EGR=TIM_EGR_UG;			//	Bit 0	UG:		Update generation	(обновляем регситры)
+    TIM1->CR1|=	TIM_CR1_CEN;			//	Bit 0	CEN:	Counter enable	(обязательно в последнюю очеред записывать этот бит)
+
+    TIM1->EGR=	TIM_EGR_UG;			//	Bit 0	UG:		Update generation	(обновляем регситры)
 #endif
 
 #ifdef COMPL_MODE
