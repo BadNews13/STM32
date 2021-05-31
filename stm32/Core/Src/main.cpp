@@ -15,15 +15,14 @@
 #include <main.hpp>
 #include <gpio.h>
 #include <uart.h>
+
 extern "C" {
-#include "../../uart_1/uart_1.h"
 void TIM2_IRQHandler(void);
 #define TIM1_BRK_TIM15_IRQn TIM1_BRK_IRQn
 #define TIM1_BRK_IRQn 24
 }
 
 UART * init_uart1(USART_TypeDef *USARTx, uint8_t *tx_buf, uint8_t *rx_buf, uint32_t BaudRate);
-void timer2_ini (void);
 
 
 
@@ -70,7 +69,7 @@ USART1->DR = 0x48;
 for(uint8_t t = 0; t < 15; t++)		{uart1->put_byte_UART_1(t);}
 */
 
-timer2_ini();
+//timer2_ini();
 
 
 
@@ -331,28 +330,6 @@ UART * init_uart1(USART_TypeDef *USARTx, uint8_t *tx_buf, uint8_t *rx_buf, uint3
 
 
 
-void timer2_ini (void)
-{
-	RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;//Тактирование таймера TIM2
-
-	TIM2->PSC = 72000000 / 1000 - 1; 		//	1000 tick/sec				//	Настройка предделителя таймера
-	TIM2->ARR = 5000;  						//	1 Interrupt/sec (1000/100)	//	Загружаем число миллисекунд в регистр автоперезагрузки
-	TIM2->DIER |= TIM_DIER_UIE; 			//	Enable tim2 interrupt		//	Разрешаем прерывание при переполнении счетчика
-	TIM2->CR1 |= TIM_CR1_CEN;   			//	Start count					//	Запускаем счет
-
-	NVIC_EnableIRQ(TIM2_IRQn);  			//	Enable IRQ
-}
-
-
-void TIM2_IRQHandler(void)
-{
-	static uint8_t i=0;
-	TIM2->SR &= ~TIM_SR_UIF; 										//	Clean UIF Flag
-	if (1 == (i++ & 0x1))		{GPIOC->BSRR = GPIO_BSRR_BS13;}		//	установить нулевой бит		(выключить светодиод)
-	else						{GPIOC->BRR = ( 1 << 13 );}			//	сбросить нулевой бит		(включить светодиод)
-
-
-}
 
 
 extern "C" void TIM1_UP_TIM16_IRQHandler()
