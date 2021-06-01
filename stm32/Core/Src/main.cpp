@@ -17,6 +17,9 @@
 #include <uart.h>
 
 #include <timerRTOS.h>
+#include <rtos.h>
+
+void led_on(void);
 
 extern "C" {
 	#include <timerBLINK.h>
@@ -71,15 +74,18 @@ USART1->DR = 0x48;
 for(uint8_t t = 0; t < 15; t++)		{uart1->put_byte_UART_1(t);}
 */
 
-//timer2_ini();
 
-timerBLINK_ini();
 
+//timerBLINK_ini();
+
+RTOS_Init();
+RTOS_SetTask(led_on, 10000, 0);		// через ~10 секунд
+//RTOS_DeleteTask(led_on);
 
 init_PP_MODE();
 
 
-GPIO *port_A = new GPIO(GPIOA); 				//	создаем экземпляр класса, передаем порт GPIOC
+GPIO *port_A = new GPIO(GPIOA); 				//	создаем экземпляр класса, передаем порт GPIOA
 port_A->pinConf(0, OUTPUT_PUSH_PULL); 			//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
 port_A->resetPin(0); 							//	установка вывода в 1
 
@@ -114,37 +120,32 @@ uint8_t k = 1;
 		uart1->put_byte_UART_1(4);
 		*/
 
-/*
-		port_A->setPin(0);
-		port_A->setPin(2);
-		delay_ms(3);
-		port_A->resetPin(0);
-		port_A->resetPin(2);
+//		1000	1100	0100	0110	0010	0011	0001	1001
+//		0123	0123	0123	0123	0123	0123	0123	0123
 
-		port_A->setPin(1);
-		port_A->setPin(3);
-		delay_ms(3);
-		port_A->resetPin(1);
-		port_A->resetPin(3);
-*/
-
-
-			port_A->setPin(0);			//	1000
+			port_A->setPin(0);			//	1001
 			delay_ms(k);
-				port_A->resetPin(3);		//	1000
-				delay_ms(i);
-					port_A->setPin(1);			//	1100
-					delay_ms(k);
+
+			port_A->resetPin(3);		//	1000
+			delay_ms(i);
+
+			port_A->setPin(1);			//	1100
+			delay_ms(k);
+
 			port_A->resetPin(0);		//	0100
 			delay_ms(i);
-							port_A->setPin(2);			//	0110
-							delay_ms(k);
-					port_A->resetPin(1);		//	0010
-					delay_ms(i);
-				port_A->setPin(3);			//	0011
-				delay_ms(k);
-							port_A->resetPin(2);		//	0001
-							delay_ms(i);
+
+			port_A->setPin(2);			//	0110
+			delay_ms(k);
+
+			port_A->resetPin(1);		//	0010
+			delay_ms(i);
+
+			port_A->setPin(3);			//	0011
+			delay_ms(k);
+
+			port_A->resetPin(2);		//	0001
+			delay_ms(i);
 
 	}
 }
@@ -367,4 +368,10 @@ void init_PP_MODE (void)
     TIM1->CR1|=TIM_CR1_CEN;
     TIM1->EGR=TIM_EGR_UG;
 #endif
+}
+
+
+void led_on(void)
+{
+	GPIOC->BRR = ( 1 << 13 );
 }

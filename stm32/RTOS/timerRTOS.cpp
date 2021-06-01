@@ -1,34 +1,29 @@
 
 
 #include <timerRTOS.h>
+#include <rtos.h>
 
-void timer2_ini (void)
+void timerRTOS_ini (void)
 {
-	RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;//Тактирование таймера TIM2
+	RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;		//Тактирование таймера TIM3
 
-	TIM2->PSC = 72000000 / 1000 - 1; 		//	1000 tick/sec				//	Настройка предделителя таймера
-	TIM2->ARR = 5000;  						//	1 Interrupt/sec (1000/100)	//	Загружаем число миллисекунд в регистр автоперезагрузки
-	TIM2->DIER |= TIM_DIER_UIE; 			//	Enable tim2 interrupt		//	Разрешаем прерывание при переполнении счетчика
-	TIM2->CR1 |= TIM_CR1_CEN;   			//	Start count					//	Запускаем счет
+//	основная шина 72 000 000 Hz
+//	шина APB1 = 72 000 000 Hz / 2 = 36 000 000
 
-	NVIC_EnableIRQ(TIM2_IRQn);  			//	Enable IRQ
+// если мы считаем микросекунды в прерывании, то точность падает.
+	// прерывание 1 раз в секунду
+	TIM2->PSC = 36000-1;			//	36 000 000 sis_tick / 36 000 = 1 000 Hz (1000 us)	//	Настройка предделителя таймера
+	TIM2->ARR = 2-1;				//	1 Interrupt / 2 0000 timer_tick 	//	Загружаем число миллисекунд в регистр автоперезагрузки
+
+	TIM2->DIER |= TIM_DIER_UIE; 	//	Enable tim2 interrupt		//	Разрешаем прерывание при переполнении счетчика
+	TIM2->CR1 |= TIM_CR1_CEN;   	//	Start count					//	Запускаем счет
+
+	NVIC_EnableIRQ(TIM2_IRQn);  	//	Enable IRQ
 }
 
 
-void TIM2_IRQHandler(void)
+ void TIM2_IRQHandler(void)
 {
-
-	static uint8_t i=0;
-	TIM2->SR &= ~TIM_SR_UIF; 										//	Clean UIF Flag
-/*	if (1 == (i++ & 0x1))		{GPIOC->BSRR = GPIO_BSRR_BS13;}		//	установить нулевой бит		(выключить светодиод)
-	else						{GPIOC->BRR = ( 1 << 13 );}			//	сбросить нулевой бит		(включить светодиод)
-*/
-
+	RTOS_ISR_INT();					//	обработчик RTOS
+	TIM2->SR &= ~TIM_SR_UIF;		//	Clean UIF Flag
 }
-
-/*
-extern "C" void TIM2_IRQHandler()
-{
-
-}
-*/
