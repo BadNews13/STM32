@@ -16,10 +16,12 @@
 #include <gpio.h>
 #include <uart.h>
 
+#include <timerRTOS.h>
+
 extern "C" {
-void TIM2_IRQHandler(void);
-#define TIM1_BRK_TIM15_IRQn TIM1_BRK_IRQn
-#define TIM1_BRK_IRQn 24
+	#include <timerBLINK.h>
+	#define TIM1_BRK_TIM15_IRQn TIM1_BRK_IRQn
+	#define TIM1_BRK_IRQn 24
 }
 
 UART * init_uart1(USART_TypeDef *USARTx, uint8_t *tx_buf, uint8_t *rx_buf, uint32_t BaudRate);
@@ -71,12 +73,10 @@ for(uint8_t t = 0; t < 15; t++)		{uart1->put_byte_UART_1(t);}
 
 //timer2_ini();
 
+timerBLINK_ini();
 
 
-// A8 работает корректно
-// A9 импульсы идут пачками
 init_PP_MODE();
-
 
 
 GPIO *port_A = new GPIO(GPIOA); 				//	создаем экземпляр класса, передаем порт GPIOC
@@ -128,65 +128,23 @@ uint8_t k = 1;
 		port_A->resetPin(3);
 */
 
-		delay_ms(i);
 
-		port_A->setPin(0);			//	1000
-
-		delay_ms(k);
-
-		port_A->resetPin(3);		//	1000
-
-		delay_ms(i);
-
-		port_A->setPin(1);			//	1100
-
-		delay_ms(k);
-
-		port_A->resetPin(0);		//	0100
-
-		delay_ms(i);
-
-		port_A->setPin(2);			//	0110
-
-		delay_ms(k);
-
-		port_A->resetPin(1);		//	0010
-
-		delay_ms(i);
-
-		port_A->setPin(3);			//	0011
-
-		delay_ms(k);
-
-		port_A->resetPin(2);		//	0001
-
-
-
-
-
-
-
-
-
-		/*
-		port_A->setPin(0);
-		delay_ms(3);
-		port_A->resetPin(0);
-
-		port_A->setPin(1);
-		delay_ms(3);
-		port_A->resetPin(1);
-
-
-		port_A->setPin(2);
-		delay_ms(3);
-		port_A->resetPin(2);
-
-
-		port_A->setPin(3);
-		delay_ms(3);
-		port_A->resetPin(3);
-*/
+			port_A->setPin(0);			//	1000
+			delay_ms(k);
+				port_A->resetPin(3);		//	1000
+				delay_ms(i);
+					port_A->setPin(1);			//	1100
+					delay_ms(k);
+			port_A->resetPin(0);		//	0100
+			delay_ms(i);
+							port_A->setPin(2);			//	0110
+							delay_ms(k);
+					port_A->resetPin(1);		//	0010
+					delay_ms(i);
+				port_A->setPin(3);			//	0011
+				delay_ms(k);
+							port_A->resetPin(2);		//	0001
+							delay_ms(i);
 
 	}
 }
