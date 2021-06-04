@@ -16,13 +16,17 @@
 #include <gpio.h>
 #include <uart.h>
 
-#include <timerRTOS.h>
+
 #include <rtos.h>
 
 void led_on(void);
+void motor (void);
 
 extern "C" {
+	#include <delay_ms.h>
+	#include <delay_us.h>
 	#include <timerBLINK.h>
+	#include <lcd.h>
 	#define TIM1_BRK_TIM15_IRQn TIM1_BRK_IRQn
 	#define TIM1_BRK_IRQn 24
 }
@@ -60,7 +64,7 @@ int main(void)
 GPIO *port_C = new GPIO(GPIOC); 				//	создаем экземпляр класса, передаем порт GPIOC
 port_C->pinConf(13, OUTPUT_PUSH_PULL); 		//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
 port_C->setPin(13); 							//	установка вывода в 1
-//port->resetPin(13); 						//	сброс вывода
+//port_C->resetPin(13); 						//	сброс вывода
 /*
 int value;
 value = port->getPin (13); // считываем состояние вывода
@@ -74,9 +78,8 @@ USART1->DR = 0x48;
 for(uint8_t t = 0; t < 15; t++)		{uart1->put_byte_UART_1(t);}
 */
 
-
-
 //timerBLINK_ini();
+timer_delay_us_ini();
 
 RTOS_Init();
 RTOS_SetTask(led_on, 10000, 0);		// через ~10 секунд
@@ -84,68 +87,40 @@ RTOS_SetTask(led_on, 10000, 0);		// через ~10 секунд
 
 init_PP_MODE();
 
-
-GPIO *port_A = new GPIO(GPIOA); 				//	создаем экземпляр класса, передаем порт GPIOA
-port_A->pinConf(0, OUTPUT_PUSH_PULL); 			//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
-port_A->resetPin(0); 							//	установка вывода в 1
-
-port_A->pinConf(1, OUTPUT_PUSH_PULL); 			//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
-port_A->resetPin(1); 							//	установка вывода в 1
-
-port_A->pinConf(2, OUTPUT_PUSH_PULL); 			//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
-port_A->resetPin(2); 							//	установка вывода в 1
-
-port_A->pinConf(3, OUTPUT_PUSH_PULL); 			//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
-port_A->resetPin(3); 							//	установка вывода в 1
+LCD_init();
 
 
-//GPIOC->BSRR = GPIO_BSRR_BS13;		//	установить нулевой бит		(выключить светодиод)
-//GPIOC->BRR = ( 1 << 13 );			//	сбросить нулевой бит		(включить светодиод)
 
+//	что видеть жива ли плата controller_v1 (это пин TX)
+uint8_t offset = ( 9 - 8 ) * 4;					//	(15-8) * 4 = 28
+GPIOA->CRH &= ~( GPIO_BITS_MASK << offset );		//	стереть 4 бита // (0xF << 20) - (bit_23, bit_22, bit_21, bit_20)
+GPIOA->CRH |= ( OUTPUT_PUSH_PULL << offset );		//	записать 4 бита
 
-uint8_t i = 1;
-uint8_t k = 1;
 
 	while(1)
 	{
-		/*
-	//	port->setPin(13); 					// установка вывода в 1
+
+/*
+		GPIOA->BSRR = ( 1 << 9 );		// установка линии RegisterSelest в 1 (данные)
 		delay_ms(300);
-	//	port->resetPin(13); 				// сброс вывода
+		GPIOA->BRR = ( 1 << 9 );		// установка линии RegisterSelest в 0 (команда)
+		delay_ms(300);
+*/
+
+
+	/*
+		port_C->setPin(13); 					// установка вывода в 1
+		delay_ms(300);
+		port_C->resetPin(13); 				// сброс вывода
 		delay_ms(300);
 
+*/
+		/*
 		uart1->put_byte_UART_1(1);
 		uart1->put_byte_UART_1(2);
 		uart1->put_byte_UART_1(3);
 		uart1->put_byte_UART_1(4);
 		*/
-
-//		1000	1100	0100	0110	0010	0011	0001	1001
-//		0123	0123	0123	0123	0123	0123	0123	0123
-
-			port_A->setPin(0);			//	1001
-			delay_ms(k);
-
-			port_A->resetPin(3);		//	1000
-			delay_ms(i);
-
-			port_A->setPin(1);			//	1100
-			delay_ms(k);
-
-			port_A->resetPin(0);		//	0100
-			delay_ms(i);
-
-			port_A->setPin(2);			//	0110
-			delay_ms(k);
-
-			port_A->resetPin(1);		//	0010
-			delay_ms(i);
-
-			port_A->setPin(3);			//	0011
-			delay_ms(k);
-
-			port_A->resetPin(2);		//	0001
-			delay_ms(i);
 
 	}
 }
@@ -238,24 +213,6 @@ void GPIO_Init (void)
 	tmpreg = READ_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPAEN);	//	Delay after an RCC peripheral clock enabling
 }
 
-void SysTick_Init(void)
-{
-	  MODIFY_REG(SysTick->LOAD,SysTick_LOAD_RELOAD_Msk,SYSCLOCK / 1000 - 1);
-	  CLEAR_BIT(SysTick->VAL, SysTick_VAL_CURRENT_Msk);
-	  SET_BIT(SysTick->CTRL, SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk | SysTick_CTRL_TICKINT_Msk);
-}
-
-extern "C" void SysTick_Handler(void)	//	обработчик прерывания системного счетчика
-{
-	if(SysTick_CNT > 0)  SysTick_CNT--;
-}
-
-void delay_ms(uint32_t ms)
-{
-	MODIFY_REG(SysTick->VAL,SysTick_VAL_CURRENT_Msk,SYSCLOCK / 1000 - 1);
-	SysTick_CNT = ms;
-	while(SysTick_CNT) {}
-}
 
 
 
@@ -374,4 +331,54 @@ void init_PP_MODE (void)
 void led_on(void)
 {
 	GPIOC->BRR = ( 1 << 13 );
+}
+
+void motor (void)
+{
+
+	/*
+GPIO *port_A = new GPIO(GPIOA); 				//	создаем экземпляр класса, передаем порт GPIOA
+port_A->pinConf(0, OUTPUT_PUSH_PULL); 			//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
+port_A->resetPin(0); 							//	установка вывода в 1
+
+port_A->pinConf(1, OUTPUT_PUSH_PULL); 			//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
+port_A->resetPin(1); 							//	установка вывода в 1
+
+port_A->pinConf(2, OUTPUT_PUSH_PULL); 			//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
+port_A->resetPin(2); 							//	установка вывода в 1
+
+port_A->pinConf(3, OUTPUT_PUSH_PULL); 			//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
+port_A->resetPin(3); 							//	установка вывода в 1
+*/
+/*
+//	1000	1100	0100	0110	0010	0011	0001	1001
+//	0123	0123	0123	0123	0123	0123	0123	0123
+
+	uint8_t i = 1;
+	uint8_t k = 1;
+
+	port_A->setPin(0);			//	1001
+	delay_ms(k);
+
+	port_A->resetPin(3);		//	1000
+	delay_ms(i);
+
+	port_A->setPin(1);			//	1100
+	delay_ms(k);
+
+	port_A->resetPin(0);		//	0100
+	delay_ms(i);
+
+	port_A->setPin(2);			//	0110
+	delay_ms(k);
+
+	port_A->resetPin(1);		//	0010
+	delay_ms(i);
+
+	port_A->setPin(3);			//	0011
+	delay_ms(k);
+
+	port_A->resetPin(2);		//	0001
+	delay_ms(i);
+	*/
 }
