@@ -64,6 +64,7 @@ void USART1_IRQHandler(void)
 			(READ_BIT(USART1->CR1, USART_CR1_RXNEIE)	== 	(USART_CR1_RXNEIE))		)	//	RXNE interrupt enable
 	{
 		uint8_t byte =  USART1->DR;		//	надо считать или uart1 зависнет
+		(void)byte;
 	}
 }
 

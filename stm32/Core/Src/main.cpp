@@ -23,6 +23,7 @@ void motor (void);
 extern "C" {
 	#include <uart_1.h>
 	#include <uart_2.h>
+	#include <uart_3.h>
 	#include <delay_ms.h>
 	#include <delay_us.h>
 	#include <timerBLINK.h>
@@ -111,6 +112,7 @@ GPIOB->BSRR = ( 1 << 10 );							//	установка линии в 1 (диод
 
 uart1_init(9600);
 uart2_init(9600);
+uart3_init(9600);
 
 //put_byte_UART1(0x66);
 	while(1)
@@ -126,7 +128,7 @@ uart2_init(9600);
 		LCDsendString(&uart1_rx_buf[0]);
 
 		LCD_Command(LCD_SETDDRAMADDR | SECONDSTRING | 0);	//	писать с нулевого адреса
-		LCDsendString(&uart2_rx_buf[0]);
+		LCDsendString(&uart3_rx_buf[0]);
 /*
 		GPIOA->BSRR = ( 1 << 2 );		// установка линии в 1
 		delay_ms(300);
@@ -140,15 +142,20 @@ uart2_init(9600);
 		delay_ms(300);
 	 */
 
-		put_byte_UART1(0x01);
-		put_byte_UART1(0x02);
-		put_byte_UART1(0x03);
-		put_byte_UART1(0x04);
+		put_byte_UART1(0x11);
+		put_byte_UART1(0x12);
+		put_byte_UART1(0x13);
+		put_byte_UART1(0x14);
 
-		put_byte_UART2(0x11);
-		put_byte_UART2(0x12);
-		put_byte_UART2(0x13);
-		put_byte_UART2(0x14);
+		put_byte_UART2(0x21);
+		put_byte_UART2(0x22);
+		put_byte_UART2(0x23);
+		put_byte_UART2(0x24);
+
+		put_byte_UART3(0x31);
+		put_byte_UART3(0x32);
+		put_byte_UART3(0x33);
+		put_byte_UART3(0x34);
 
 	}
 }
