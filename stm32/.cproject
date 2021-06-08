@@ -45,7 +45,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/CMSIS/inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/gpio}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/uart}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/dma}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/blink}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/LCD_1602}&quot;"/>
@@ -68,7 +67,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/CMSIS/inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/uart}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/gpio}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/dma}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/blink}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/LCD_1602}&quot;"/>

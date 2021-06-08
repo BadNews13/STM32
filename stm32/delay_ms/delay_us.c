@@ -6,7 +6,7 @@ static __IO uint32_t SysTick_CNT_us = 0;	//	для системного тайм
 
 void timer_delay_us_ini (void)
 {
-	RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;		//Тактирование таймера TIM3
+	RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;		//Тактирование таймера TIM4
 
 //	основная шина 72 000 000 Hz
 //	шина APB1 = 72 000 000 Hz / 2 = 36 000 000

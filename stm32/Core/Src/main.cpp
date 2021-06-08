@@ -14,15 +14,14 @@
 
 #include <main.hpp>
 #include <gpio.h>
-#include <uart.h>
-
-
 #include <rtos.h>
 
 void led_on(void);
 void motor (void);
 
+
 extern "C" {
+	#include <uart_1.h>
 	#include <delay_ms.h>
 	#include <delay_us.h>
 	#include <timerBLINK.h>
@@ -31,7 +30,7 @@ extern "C" {
 	#define TIM1_BRK_IRQn 24
 }
 
-UART * init_uart1(USART_TypeDef *USARTx, uint8_t *tx_buf, uint8_t *rx_buf, uint32_t BaudRate);
+//UART * init_uart1(USART_TypeDef *USARTx, uint8_t *tx_buf, uint8_t *rx_buf, uint32_t BaudRate);
 
 
 
@@ -52,11 +51,23 @@ void init_PP_MODE (void);
 
 int main(void)
 {
-
 	RCC_DeInit();		//	сбрасываем тактирование
 	SetSysClockTo72();	//	тактирование от внешнего 8 MHz -> 72 MHz
 	GPIO_Init();		//	настройка портов
-	SysTick_Init();		//	запуск системного таймера (для функции delay)
+	SysTick_Init();		//	запуск системного таймера (для функции delay_ms())
+
+	LCD_init();				//	инициализирует LCD1602
+
+	//timerBLINK_ini();		//	запускаем мигание светодиода на отладочной плате
+
+	RTOS_Init();						//	запускает RTOS
+	RTOS_SetTask(led_on, 10000, 0);		// для теста (через ~10 секунд включится светодиод на отладочной плате)
+	//RTOS_DeleteTask(led_on);
+
+	uart1_init(9600);
+
+	//init_PP_MODE();		//	генерация двух противофазных П-образных сигнала на частоте 125kHz
+
 
 	GPIOC->BSRR = GPIO_BSRR_BS13;		//установить нулевой бит
 
@@ -70,57 +81,64 @@ int value;
 value = port->getPin (13); // считываем состояние вывода
 */
 
+
+
 /*
-uint8_t tx_buf[30];
-uint8_t rx_buf[30];
-UART *uart1 = init_uart1(USART1, &tx_buf[0], &rx_buf[0], 9600);
-USART1->DR = 0x48;
-for(uint8_t t = 0; t < 15; t++)		{uart1->put_byte_UART_1(t);}
-*/
-
-//timerBLINK_ini();
-timer_delay_us_ini();
-
-RTOS_Init();
-RTOS_SetTask(led_on, 10000, 0);		// через ~10 секунд
-//RTOS_DeleteTask(led_on);
-
-init_PP_MODE();
-
-LCD_init();
-
-
-
-//	что видеть жива ли плата controller_v1 (это пин TX)
-uint8_t offset = ( 9 - 8 ) * 4;					//	(15-8) * 4 = 28
+//	чтобы видеть жива ли плата controller_v1 (это пин TX1 (PA9))
+//	тактирование шины A уже включено
+uint8_t offset = ( 9 - 8 ) * 4;						//	(9-8) * 4 = 4
 GPIOA->CRH &= ~( GPIO_BITS_MASK << offset );		//	стереть 4 бита // (0xF << 20) - (bit_23, bit_22, bit_21, bit_20)
 GPIOA->CRH |= ( OUTPUT_PUSH_PULL << offset );		//	записать 4 бита
-
-
-	while(1)
-	{
-
-/*
-		GPIOA->BSRR = ( 1 << 9 );		// установка линии RegisterSelest в 1 (данные)
-		delay_ms(300);
-		GPIOA->BRR = ( 1 << 9 );		// установка линии RegisterSelest в 0 (команда)
-		delay_ms(300);
 */
 
 
+//	чтоБы видеть жива ли плата controller_v1 (это пин TX2 (PA2))
+//	тактирование шины A уже включено
+uint8_t offset = 2 * 4;								//	2 * 4 = 8
+GPIOA->CRL &= ~( GPIO_BITS_MASK << offset );		//	стереть 4 бита // (0xF << 20) - (bit_23, bit_22, bit_21, bit_20)
+GPIOA->CRL |= ( OUTPUT_PUSH_PULL << offset );		//	записать 4 бита
+GPIOA->BSRR = ( 1 << 2 );							//	установка линии в 1 (диод не светится)
+//GPIOA->BRR = ( 1 << 2 );							//	установка линии TX2 в 0 (диод светится)
+
+//	чтоБы видеть жива ли плата controller_v1 (это пин TX3 (PB10))
+
+RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;
+offset = ( 10 - 8 ) * 4;							//	(10-8) * 4 = 28
+GPIOB->CRH &= ~( GPIO_BITS_MASK << offset );		//	стереть 4 бита // (0xF << 20) - (bit_23, bit_22, bit_21, bit_20)
+GPIOB->CRH |= ( OUTPUT_PUSH_PULL << offset );		//	записать 4 бита
+GPIOB->BSRR = ( 1 << 10 );							//	установка линии в 1 (диод не светится)
+//GPIOB->BRR = ( 1 << 10 );							//	установка линии TX3 в 0 (диод светится)
+
+
+
+put_byte_UART1(0x66);
+	while(1)
+	{
+		delay_ms(500);
+
+
+		LCD_Command(0x01);		//	очистка дисплея					(LCD_CLEAR)
+		delay_ms(2);			//	долгая операция
+		LCD_Command(LCD_SETDDRAMADDR | 0);	//	писать с нулевого адреса
+		LCDsendString(&uart1_rx_buf[0]);
+/*
+		GPIOA->BSRR = ( 1 << 2 );		// установка линии в 1
+		delay_ms(300);
+	//	GPIOA->BRR = ( 1 << 2 );		// установка линии в 0
+		delay_ms(300);
+*/
 	/*
 		port_C->setPin(13); 					// установка вывода в 1
 		delay_ms(300);
 		port_C->resetPin(13); 				// сброс вывода
 		delay_ms(300);
+	 */
 
-*/
-		/*
-		uart1->put_byte_UART_1(1);
-		uart1->put_byte_UART_1(2);
-		uart1->put_byte_UART_1(3);
-		uart1->put_byte_UART_1(4);
-		*/
+
+		put_byte_UART1(0x01);
+		put_byte_UART1(0x02);
+		put_byte_UART1(0x03);
+		put_byte_UART1(0x04);
 
 	}
 }
@@ -215,7 +233,7 @@ void GPIO_Init (void)
 
 
 
-
+/*
 UART * init_uart1(USART_TypeDef *USARTx, uint8_t *tx_buf, uint8_t *rx_buf, uint32_t BaudRate)
 {
 	UART *uart  = new UART();
@@ -244,7 +262,7 @@ UART * init_uart1(USART_TypeDef *USARTx, uint8_t *tx_buf, uint8_t *rx_buf, uint3
 	return uart;
 }
 
-
+*/
 
 
 
