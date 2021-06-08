@@ -22,6 +22,7 @@ void motor (void);
 
 extern "C" {
 	#include <uart_1.h>
+	#include <uart_2.h>
 	#include <delay_ms.h>
 	#include <delay_us.h>
 	#include <timerBLINK.h>
@@ -64,7 +65,6 @@ int main(void)
 	RTOS_SetTask(led_on, 10000, 0);		// для теста (через ~10 секунд включится светодиод на отладочной плате)
 	//RTOS_DeleteTask(led_on);
 
-	uart1_init(9600);
 
 	//init_PP_MODE();		//	генерация двух противофазных П-образных сигнала на частоте 125kHz
 
@@ -91,7 +91,7 @@ GPIOA->CRH &= ~( GPIO_BITS_MASK << offset );		//	стереть 4 бита // (0
 GPIOA->CRH |= ( OUTPUT_PUSH_PULL << offset );		//	записать 4 бита
 */
 
-
+/*
 //	чтоБы видеть жива ли плата controller_v1 (это пин TX2 (PA2))
 //	тактирование шины A уже включено
 uint8_t offset = 2 * 4;								//	2 * 4 = 8
@@ -99,28 +99,34 @@ GPIOA->CRL &= ~( GPIO_BITS_MASK << offset );		//	стереть 4 бита // (0
 GPIOA->CRL |= ( OUTPUT_PUSH_PULL << offset );		//	записать 4 бита
 GPIOA->BSRR = ( 1 << 2 );							//	установка линии в 1 (диод не светится)
 //GPIOA->BRR = ( 1 << 2 );							//	установка линии TX2 в 0 (диод светится)
-
+*/
 //	чтоБы видеть жива ли плата controller_v1 (это пин TX3 (PB10))
 
 RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;
-offset = ( 10 - 8 ) * 4;							//	(10-8) * 4 = 28
+uint8_t offset = ( 10 - 8 ) * 4;							//	(10-8) * 4 = 28
 GPIOB->CRH &= ~( GPIO_BITS_MASK << offset );		//	стереть 4 бита // (0xF << 20) - (bit_23, bit_22, bit_21, bit_20)
 GPIOB->CRH |= ( OUTPUT_PUSH_PULL << offset );		//	записать 4 бита
 GPIOB->BSRR = ( 1 << 10 );							//	установка линии в 1 (диод не светится)
 //GPIOB->BRR = ( 1 << 10 );							//	установка линии TX3 в 0 (диод светится)
 
+uart1_init(9600);
+uart2_init(9600);
 
-
-put_byte_UART1(0x66);
+//put_byte_UART1(0x66);
 	while(1)
 	{
 		delay_ms(500);
+//		USART1->DR = 0xE1;
+//		USART2->DR = 0xE2;
 
 
 		LCD_Command(0x01);		//	очистка дисплея					(LCD_CLEAR)
 		delay_ms(2);			//	долгая операция
 		LCD_Command(LCD_SETDDRAMADDR | 0);	//	писать с нулевого адреса
 		LCDsendString(&uart1_rx_buf[0]);
+
+		LCD_Command(LCD_SETDDRAMADDR | SECONDSTRING | 0);	//	писать с нулевого адреса
+		LCDsendString(&uart2_rx_buf[0]);
 /*
 		GPIOA->BSRR = ( 1 << 2 );		// установка линии в 1
 		delay_ms(300);
@@ -134,11 +140,15 @@ put_byte_UART1(0x66);
 		delay_ms(300);
 	 */
 
-
 		put_byte_UART1(0x01);
 		put_byte_UART1(0x02);
 		put_byte_UART1(0x03);
 		put_byte_UART1(0x04);
+
+		put_byte_UART2(0x11);
+		put_byte_UART2(0x12);
+		put_byte_UART2(0x13);
+		put_byte_UART2(0x14);
 
 	}
 }

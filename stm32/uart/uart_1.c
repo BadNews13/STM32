@@ -33,6 +33,7 @@ void uart1_init (uint32_t BaudRate)
 
 	NVIC_EnableIRQ(USART1_IRQn);
 	USART1_DMA_init();
+//	USART1->DR = 0xA1;		//	для теста
 }
 
 
@@ -62,8 +63,7 @@ void USART1_IRQHandler(void)
 	if(		(READ_BIT(USART1->SR, USART_SR_RXNE) 		== 	(USART_SR_RXNE)) &&			//	Read data register not empty
 			(READ_BIT(USART1->CR1, USART_CR1_RXNEIE)	== 	(USART_CR1_RXNEIE))		)	//	RXNE interrupt enable
 	{
-//		uint8_t byte =  USART1->DR;
-//		USART1->DR = 0x45;
+		uint8_t byte =  USART1->DR;		//	надо считать или uart1 зависнет
 	}
 }
 
