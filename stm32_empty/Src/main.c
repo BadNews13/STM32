@@ -7,85 +7,53 @@
   ******************************************************************************
 */
 
+#include "stm32f10x.h"				//	чтобы работать с CMSIS (использовать названия регистров)
 
-#if !defined(__SOFT_FP__) && defined(__ARM_FP)
-  #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
-#endif
+static  uint32_t SysTick_CNT = 0;	//	для системного таймера
+#define SYSCLOCK 72000000U			//	от этого значения расчитывается таймер для задержки
 
-#include <main.hpp>
-#include <gpio.h>
-#include <uart.h>
-extern "C" {
-#include "../../uart_1/uart_1.h"
-}
+//========== Для инициализации GPIO ======================================================
+//---------------inputs-------------------------------------------------
+#define INPUT_FLOATING 		0x04 	// вход без подтяжки							0100
+#define INPUT_PULL_UP 		0x7F 	// с подтяжкой к питанию
+#define INPUT_PULL_DOWN 	0xFF 	// с подтяжкой к "земле"
+#define INPUT_ANALOG 		0x00 	// аналоговый вход
 
+#define INPUT_PULL_UP_DOWN 	0x08 	// используется для обоих вариантов
+#define GPIO_BITS_MASK 		0x0F 	// маска для стирания битов конфигурации
+
+//--------------outputs--------------------------------------------------
+#define OUTPUT_OPEN_DRAIN 	0x07 	// выход открытый сток
+#define OUTPUT_PUSH_PULL 	0x03 	// выход тяни-толкай
+
+//--------------altarnate function---------------------------------------
+#define AF_PUSH_PULL 		0x0B 	// альтернативная ф-я с выходом тяни-толкай		1011
+#define AF_OPEN_DRAIN 		0x0F 	// альтернативная функция с открытым стоком		1111
+//========================================================================================
+
+
+
+void RCC_DeInit(void);			//	сбрасываем тактирование
+void SetSysClockTo72(void);		//	настраиваем на 72 MHz
+void SWD_Init (void);			//	настраиваем SWD, чтобы работал отладчик
+void SysTick_Init(void);		//	для функции задержки
+void GPIO_Init (void);			//	для светодиода на отладочной плате
+void delay_ms(uint32_t ms);		//	задержка в милисекундах
 
 int main(void)
 {
-
 	RCC_DeInit();		//	сбрасываем тактирование
 	SetSysClockTo72();	//	тактирование от внешнего 8 MHz -> 72 MHz
-	GPIO_Init();		//	настройка портов
-	SysTick_Init();		//	запуск системного таймера (для функции delay)
-
-	GPIOC->BSRR = GPIO_BSRR_BS13;		//установить нулевой бит
-
- //	DMA1_Init();
-//	USART1_Init();
-
-
-
-
-
-
-
-
-for(uint8_t t = 0; t < 15; t++)		{put_byte_UART1(t);}
-uint8_t i = 0;
-
-
-// Пример настройки светодиода на отладочной плате
-GPIO *port = new GPIO(GPIOC); 				//	создаем экземпляр класса, передаем порт GPIOC
-port->pinConf(13, OUTPUT_PUSH_PULL); 		//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
-port->setPin(13); 							//	установка вывода в 1
-//port->resetPin(13); 						//	сброс вывода
-/*
-int value;
-value = port->getPin (13); // считываем состояние вывода
-*/
-
-UART *uart1 = new UART(USART1, 115200);
-UART *uart2 = new UART(USART2, 115200);
-UART *uart3 = new UART(USART3, 115200);
-
-delay_ms(100);
-USART1->DR = 0x48;
-USART2->DR = 0x76;
-USART3->DR = 0x25;
-
-
-//	разрешим от данного модуля локальные прерывания – по заполнению приёмного буфера и по ошибке передачи данных
-SET_BIT(USART1->CR1, USART_CR1_RXNEIE);
-SET_BIT(USART1->CR3, USART_CR3_EIE);
-
-
-
-//GPIOC->BSRR = GPIO_BSRR_BS13;		//	установить нулевой бит		(выключить светодиод)
-//GPIOC->BRR = ( 1 << 13 );			//	сбросить нулевой бит		(включить светодиод)
+	SWD_Init();			//	настройка портов
+	SysTick_Init();		//	запуск системного таймера (для функции delay_ms())
+	GPIO_Init();		//	настройка портов (чтобы мигать диодом на отладочной плате
 
 	while(1)
 	{
-/*
-		port->setPin(13); 					// установка вывода в 1
-		delay_ms(300);
-		port->resetPin(13); 				// сброс вывода
-		delay_ms(300);
-
-		put_byte_UART1(i++);
-		put_byte_UART1(i++);
-		put_byte_UART1(i++);
-		put_byte_UART1(i++);
-*/
+		delay_ms(500);
+		GPIOC->BSRR = ( 1 << 13 );		//	установка линии в 1 (диод не светится)
+		delay_ms(500);
+		GPIOC->BRR = ( 1 << 13 );		//	установка линии в 0 (диод светится)
 	}
 }
 
@@ -165,81 +133,41 @@ void SetSysClockTo72(void)
 }
 
 
-
 void GPIO_Init (void)
 {
-	uint32_t tmpreg;	//	пока используется для задержки.
-	(void) tmpreg;
+	RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;					//	тактирование порта C (для светодиода на выводе PC13)
+	uint8_t offset = ( 13 - 8 ) * 4;					//	(13-8) * 4 = 20	(Если номер больше 8, то пишем в CRH. На каждый пин по 4 бита)
+	GPIOC->CRH &= ~( GPIO_BITS_MASK << offset );		//	стереть 4 бита
+	GPIOC->CRH |= ( OUTPUT_PUSH_PULL << offset );		//	записать 4 бита
+	//GPIOC->BSRR = ( 1 << 13 );						//	установка линии в 1 (диод не светится)
+	//GPIOC->BRR = ( 1 << 13 );							//	установка линии в 0 (диод светится)
+}
+
+
+void SWD_Init (void)
+{
 	SET_BIT(RCC->APB2ENR, RCC_APB2ENR_AFIOEN);				//	Alternate function IO clock enable	(запуск тактирования для SWD отладчика
-	tmpreg = READ_BIT(RCC->APB2ENR, RCC_APB2ENR_AFIOEN);	//	Delay after an RCC peripheral clock enabling
 
 	CLEAR_BIT(AFIO->MAPR,AFIO_MAPR_SWJ_CFG);
 	SET_BIT(AFIO->MAPR, AFIO_MAPR_SWJ_CFG_JTAGDISABLE);		//	NOJTAG: JTAG-DP Disabled and SW-DP Enabled	(для отладчика)
 
 	SET_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPAEN);				//	enable port A	(запуск тактирование порта A)
-	tmpreg = READ_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPAEN);	//	Delay after an RCC peripheral clock enabling
-
-
-
-/*
-	// Для примера включим светодиод на выводе А9
-	// CNF 00: General purpose output Push-pull
-	CLEAR_BIT	(GPIOA->CRH, GPIO_CRH_CNF9_1);
-	CLEAR_BIT	(GPIOA->CRH, GPIO_CRH_CNF9_0);
-	// MODE 11:	Output mode, max speed 50 MHz
-	SET_BIT	(GPIOA->CRH, GPIO_CRH_MODE9_1);
-	SET_BIT	(GPIOA->CRH, GPIO_CRH_MODE9_0);
-
-	CLEAR_BIT	(GPIOA->BSRR, GPIO_ODR_ODR9);	//	выставляем на выводе лог. 0
-	// конец конфигурирования вывода A9
-*/
-/*
-	// Для примера включим светодиод на выводе А5
-	// CNF 00: General purpose output Push-pull
-	CLEAR_BIT	(GPIOA->CRL, GPIO_CRL_CNF5_1);
-	CLEAR_BIT	(GPIOA->CRL, GPIO_CRL_CNF5_0);
-	// MODE 11:	Output mode, max speed 50 MHz
-	SET_BIT	(GPIOA->CRL, GPIO_CRL_MODE5_1);
-	SET_BIT	(GPIOA->CRL, GPIO_CRL_MODE5_0);
-
-	SET_BIT	(GPIOA->BSRR, GPIO_ODR_ODR5);		//	выставляем на выводе лог. 1 (так мы его выключим)
-
-*/
-
-
-	/*
-	//===================================================
-		SET_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPCEN);				//	enable port C	(запуск тактирование порта A)
-		tmpreg = READ_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPCEN);	//	Delay after an RCC peripheral clock enabling
-
-		// Для примера включим светодиод на выводе С13
-		// CNF 00: General purpose output Push-pull
-		CLEAR_BIT	(GPIOC->CRH, GPIO_CRH_CNF13_1);
-		CLEAR_BIT	(GPIOC->CRH, GPIO_CRH_CNF13_0);
-		// MODE 11:	Output mode, max speed 50 MHz
-		SET_BIT	(GPIOC->CRH, GPIO_CRH_MODE13_1);
-		SET_BIT	(GPIOC->CRH, GPIO_CRH_MODE13_0);
-
-		GPIOC->BSRR = GPIO_BSRR_BR13;		//сбросить нулевой бит
-//		GPIOC->BSRR = GPIO_BSRR_BS13;		//установить нулевой бит
-
- */
-
 }
+
 
 void SysTick_Init(void)
 {
-
 	  MODIFY_REG(SysTick->LOAD,SysTick_LOAD_RELOAD_Msk,SYSCLOCK / 1000 - 1);
 	  CLEAR_BIT(SysTick->VAL, SysTick_VAL_CURRENT_Msk);
 	  SET_BIT(SysTick->CTRL, SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk | SysTick_CTRL_TICKINT_Msk);
-
 }
 
-extern "C" void SysTick_Handler(void)	//	обработчик прерывания системного счетчика
+
+void SysTick_Handler(void)	//	обработчик прерывания системного счетчика
 {
 	if(SysTick_CNT > 0)  SysTick_CNT--;
 }
+
 
 void delay_ms(uint32_t ms)
 {
@@ -247,5 +175,3 @@ void delay_ms(uint32_t ms)
 	SysTick_CNT = ms;
 	while(SysTick_CNT) {}
 }
-
-

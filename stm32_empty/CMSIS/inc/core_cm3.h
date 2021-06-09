@@ -119,8 +119,8 @@
 #endif
 
 #include <stdint.h>                      /* standard types definitions                      */
-#include "C:/git_hub/STM32/stm32/CMSIS/inc/core_cmInstr.h"                /* Core Instruction Access                         */
-#include "C:/git_hub/STM32/stm32/CMSIS/inc/core_cmFunc.h"                 /* Core Function Access                            */
+#include "core_cmInstr.h"                /* Core Instruction Access                         */
+#include "core_cmFunc.h"                 /* Core Function Access                            */
 
 #endif /* __CORE_CM3_H_GENERIC */
 
