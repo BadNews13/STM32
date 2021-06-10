@@ -28,8 +28,8 @@ extern "C" {
 	#include <delay_us.h>
 	#include <timerBLINK.h>
 	#include <lcd.h>
-	#define TIM1_BRK_TIM15_IRQn TIM1_BRK_IRQn
-	#define TIM1_BRK_IRQn 24
+	#define TIM1_BRK_TIM15_IRQn 	TIM1_BRK_IRQn
+	#define TIM1_BRK_IRQn 			24
 }
 
 //UART * init_uart1(USART_TypeDef *USARTx, uint8_t *tx_buf, uint8_t *rx_buf, uint32_t BaudRate);
@@ -121,7 +121,7 @@ uart3_init(9600);
 //		USART1->DR = 0xE1;
 //		USART2->DR = 0xE2;
 
-
+/*
 		LCD_Command(0x01);		//	очистка дисплея					(LCD_CLEAR)
 		delay_ms(2);			//	долгая операция
 		LCD_Command(LCD_SETDDRAMADDR | 0);	//	писать с нулевого адреса
@@ -129,6 +129,8 @@ uart3_init(9600);
 
 		LCD_Command(LCD_SETDDRAMADDR | SECONDSTRING | 0);	//	писать с нулевого адреса
 		LCDsendString(&uart3_rx_buf[0]);
+*/
+
 /*
 		GPIOA->BSRR = ( 1 << 2 );		// установка линии в 1
 		delay_ms(300);

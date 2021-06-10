@@ -15,7 +15,7 @@ void timerBLINK_ini (void)
 	TIM3->ARR = 2000-1;				//	1 Interrupt / 2 0000 timer_tick 	//	Загружаем число миллисекунд в регистр автоперезагрузки
 
 	TIM3->DIER |= TIM_DIER_UIE; 	//	Enable tim2 interrupt		//	Разрешаем прерывание при переполнении счетчика
-	TIM3->CR1 |= TIM_CR1_CEN;   	//	Start count					//	Запускаем счет
+//	TIM3->CR1 |= TIM_CR1_CEN;   	//	Start count					//	Запускаем счет
 
 	NVIC_EnableIRQ(TIM3_IRQn);  	//	Enable IRQ
 }
