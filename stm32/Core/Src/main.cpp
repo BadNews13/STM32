@@ -21,6 +21,9 @@ void motor (void);
 
 
 extern "C" {
+	#include <exti.h>
+	#include <mirf.h>
+	#include <spi_1.h>
 	#include <uart_1.h>
 	#include <uart_2.h>
 	#include <uart_3.h>
@@ -28,13 +31,8 @@ extern "C" {
 	#include <delay_us.h>
 	#include <timerBLINK.h>
 	#include <lcd.h>
-	#define TIM1_BRK_TIM15_IRQn 	TIM1_BRK_IRQn
-	#define TIM1_BRK_IRQn 			24
+
 }
-
-//UART * init_uart1(USART_TypeDef *USARTx, uint8_t *tx_buf, uint8_t *rx_buf, uint32_t BaudRate);
-
-
 
 
 
@@ -51,23 +49,46 @@ extern "C" {
 void init_PP_MODE (void);
 
 
+
+
+//======================================================================================================
+#ifdef MIRF_Master
+//	Для ардуины отправителя
+uint8_t self_adr[3] = {0xB1, 0xB2, 0xB3};		//	адрес этого устройства
+uint8_t remote_adr[3] = {0xC1, 0xC2, 0xC3};		//	адрес удаленного устройства
+	uint8_t master = 1;
+#else
+//	Для ардуины получателя
+uint8_t self_adr[3] = {0xC1, 0xC2, 0xC3};		//	адрес этого устройства
+uint8_t remote_adr[3] = {0xB1, 0xB2, 0xB3};		//	адрес удаленного устройства
+	uint8_t master = 0;
+#endif
+
+
+
+
 int main(void)
 {
 	RCC_DeInit();		//	сбрасываем тактирование
 	SetSysClockTo72();	//	тактирование от внешнего 8 MHz -> 72 MHz
 	GPIO_Init();		//	настройка портов
 	SysTick_Init();		//	запуск системного таймера (для функции delay_ms())
-
-	LCD_init();				//	инициализирует LCD1602
-
-	//timerBLINK_ini();		//	запускаем мигание светодиода на отладочной плате
+	timer_delay_us_ini();	//	запуск таймера для dela_us()
+//	LCD_init();			//	инициализирует LCD1602
+//	timerBLINK_ini();	//	запускаем мигание светодиода на отладочной плате
 
 	RTOS_Init();						//	запускает RTOS
 	RTOS_SetTask(led_on, 10000, 0);		// для теста (через ~10 секунд включится светодиод на отладочной плате)
 	//RTOS_DeleteTask(led_on);
 
-
 	//init_PP_MODE();		//	генерация двух противофазных П-образных сигнала на частоте 125kHz
+
+	//uart1_init(9600);
+	uart2_init(9600);
+	//uart3_init(9600);
+
+
+
 
 
 	GPIOC->BSRR = GPIO_BSRR_BS13;		//установить нулевой бит
@@ -81,7 +102,6 @@ port_C->setPin(13); 							//	установка вывода в 1
 int value;
 value = port->getPin (13); // считываем состояние вывода
 */
-
 
 
 /*
@@ -102,22 +122,52 @@ GPIOA->BSRR = ( 1 << 2 );							//	установка линии в 1 (диод 
 //GPIOA->BRR = ( 1 << 2 );							//	установка линии TX2 в 0 (диод светится)
 */
 //	чтоБы видеть жива ли плата controller_v1 (это пин TX3 (PB10))
-
+/*
 RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;
 uint8_t offset = ( 10 - 8 ) * 4;							//	(10-8) * 4 = 28
 GPIOB->CRH &= ~( GPIO_BITS_MASK << offset );		//	стереть 4 бита // (0xF << 20) - (bit_23, bit_22, bit_21, bit_20)
 GPIOB->CRH |= ( OUTPUT_PUSH_PULL << offset );		//	записать 4 бита
 GPIOB->BSRR = ( 1 << 10 );							//	установка линии в 1 (диод не светится)
 //GPIOB->BRR = ( 1 << 10 );							//	установка линии TX3 в 0 (диод светится)
+*/
 
-uart1_init(9600);
-uart2_init(9600);
-uart3_init(9600);
 
-//put_byte_UART1(0x66);
+
+mirf_init();
+
+mirf_set_rxaddr(1,self_adr);	//	трубу №1 присвоить адрес (наш адрес)
+
+mirf_set_txaddr(remote_adr);	//	задать адрес получателя
+mirf_set_rxaddr(0,remote_adr);	//	если включено ACK, то RX_ADR_P0 должен быть такой же как у удаленного устройства
+
+for (uint8_t i = 0; i<3; i++)	{put_byte_UART2(self_adr[i]);}
+
+uint8_t message[5] = {0x01, 0x02, 0x03, 0x04, 0x05};		//	тестовое сообщение
+
+if(master == 1)		{MIRF_SET_TX(); mirf_write(&message[0]);	put_byte_UART2(0xA1);}
+else				{MIRF_SET_RX();								put_byte_UART2(0xA2);}
+
+
+
 	while(1)
 	{
-		delay_ms(500);
+		/*
+		put_byte_UART2(NRF_read_reg(0xFF));	//	получаем статус
+		for(uint8_t i = 0; i<10; i++)	{}
+		put_byte_UART2(NRF_read_reg(CONFIG));
+*/
+
+#ifdef MIRF_Master
+		put_byte_UART2(0x0A); put_byte_UART2(0x01);
+		mirf_write(&message[0]);
+#else
+		put_byte_UART2(0x0A); put_byte_UART2(0x02);
+#endif
+
+
+		delay_ms(100);
+
+
 //		USART1->DR = 0xE1;
 //		USART2->DR = 0xE2;
 
@@ -143,22 +193,24 @@ uart3_init(9600);
 		port_C->resetPin(13); 				// сброс вывода
 		delay_ms(300);
 	 */
-
+/*
 		put_byte_UART1(0x11);
 		put_byte_UART1(0x12);
 		put_byte_UART1(0x13);
 		put_byte_UART1(0x14);
-
+*/
+/*
 		put_byte_UART2(0x21);
 		put_byte_UART2(0x22);
 		put_byte_UART2(0x23);
 		put_byte_UART2(0x24);
-
+*/
+/*
 		put_byte_UART3(0x31);
 		put_byte_UART3(0x32);
 		put_byte_UART3(0x33);
 		put_byte_UART3(0x34);
-
+*/
 	}
 }
 
@@ -251,40 +303,6 @@ void GPIO_Init (void)
 }
 
 
-
-/*
-UART * init_uart1(USART_TypeDef *USARTx, uint8_t *tx_buf, uint8_t *rx_buf, uint32_t BaudRate)
-{
-	UART *uart  = new UART();
-
-	uart->USARTx = USARTx;
-	uart->F_CPU = 72000000;
-	uart->BaudRate = BaudRate;
-
-	if	(USARTx == USART1)	{RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;	uart->tx_pin = 9;	uart->rx_pin = 10;}
-	if	(USARTx == USART2)	{RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;	uart->tx_pin = 2;	uart->rx_pin = 3;}
-	if	(USARTx == USART3)	{RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;	uart->tx_pin = 2;	uart->rx_pin = 3;}
-
-	uart->rx_buf = &rx_buf[0];
-	uart->rx_buf_size = 30;
-
-	uart->tx_buf = &tx_buf[0];
-	uart->tx_buf_size = 30;
-
-	uart->init();
-
-	uart->dma_init(OUTPUT, &tx_buf[0]);			//	внутри экземпляра создаем обьект DMA для отправки данных
-	uart->dma_init(INPUT, &rx_buf[0]);			//	внутри экземплеяра создаем обьект DMA для приема данных
-
-	set_ptr_on_obj((uint16_t*)uart);			//	передаем указатель на обьект в класс (для обработки прерывания через вызов метода)
-
-	return uart;
-}
-
-*/
-
-
-
 extern "C" void TIM1_UP_TIM16_IRQHandler()
 {
     // Этот обработчик может обслуживать разные прерывания, поэтому,
@@ -373,7 +391,7 @@ void led_on(void)
 void motor (void)
 {
 
-	/*
+/*
 GPIO *port_A = new GPIO(GPIOA); 				//	создаем экземпляр класса, передаем порт GPIOA
 port_A->pinConf(0, OUTPUT_PUSH_PULL); 			//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
 port_A->resetPin(0); 							//	установка вывода в 1
@@ -387,6 +405,7 @@ port_A->resetPin(2); 							//	установка вывода в 1
 port_A->pinConf(3, OUTPUT_PUSH_PULL); 			//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
 port_A->resetPin(3); 							//	установка вывода в 1
 */
+
 /*
 //	1000	1100	0100	0110	0010	0011	0001	1001
 //	0123	0123	0123	0123	0123	0123	0123	0123
@@ -419,3 +438,5 @@ port_A->resetPin(3); 							//	установка вывода в 1
 	delay_ms(i);
 	*/
 }
+
+

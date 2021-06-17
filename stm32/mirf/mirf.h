@@ -4,47 +4,68 @@
 #include <stdio.h>
 #include "nRF24L01.h"
 
-#define mirf_PAYLOAD MAX_PACK_LENGTH_FOR_MIRF
 
+#define	MIRF_Master		//	СЌС‚Рѕ СѓСЃС‚СЂРѕР№СЃС‚РІРѕ - РјР°СЃС‚РµСЂ. Р•СЃР»Рё РїРѕРґС‡РёРЅРµРЅРЅС‹Р№, С‚Рѕ Р·Р°РєРѕРјРµРЅС‚РёСЂРѕРІР°С‚СЊ СЌС‚Сѓ СЃС‚СЂРѕРєСѓ
+
+
+
+
+#define NRF_CS		10	//	B10
+#define NRF_CE		0	//	B0
+
+
+#define NRF_CS_OFF() 	GPIOB->BSRR = ( 1 << NRF_CS )	//	РїРѕРґРЅРёРјР°РµРј Р»РёРЅРёСЋ
+#define NRF_CS_ON() 	GPIOB->BRR = ( 1 << NRF_CS )	//	РѕРїСѓСЃРєР°РµРј Р»РёРЅРё
+
+#define NRF_CE_SET() 	GPIOB->BSRR = ( 1 << NRF_CE )	//	РїРѕРґРЅРёРјР°РµРј Р»РёРЅРёСЋ
+#define NRF_CE_RESET() 	GPIOB->BRR = ( 1 << NRF_CE )	//	РѕРїСѓСЃРєР°РµРј Р»РёРЅРё
+
+
+void GPIO_mirf_Init (void);
+uint8_t NRF_read_reg (uint8_t adr);
+uint8_t NRF_write_reg (uint8_t adr, uint8_t data);
+
+
+
+
+/*
+#define mirf_PAYLOAD MAX_PACK_LENGTH_FOR_MIRF
+*/
 #ifndef uint16_t
 #define uint8_t unsigned char
 #define uint16_t unsigned int
 #endif
 
-//	пользовательская настройка чипа nRF24L01
-//#define	MIRF_Master		//	это устройство - мастер. Если подчиненный, то закоментировать эту строку
-
-#define NRF_CE_DDR		DDRB		//			DDRD
-#define NRF_CE_PORT		PORTB		//			PORTD
-#define NRF_CE_PIN_NUM	PORTB1		//			PORTD7
-
-#define NRF_CSN_DDR		DDRB
-#define NRF_CSN_PORT	PORTB
-#define NRF_CSN_PIN_NUM	PORTB0
+//	пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ nRF24L01
+//#define	MIRF_Master		//	пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅ. пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 
 
-#define mirf_CH      87+(0x0F*2)//124								//transmission channel	//	выбор радиоканала
+#define mirf_PAYLOAD 16
+
+
+
+#define mirf_CH      87+(0x0F*2)//124								//transmission channel	//	пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 //#define mirf_PAYLOAD 12												//payload lenght
-#define mirf_CONFIG ((1<<EN_CRC) | (1<<CRCO) | (1<<MASK_TX_DS) | (1<<MASK_RX_DR))		//	 включить 16 бит CRC и прерывание TX, прерывание RX (есть еще превышение числа повторных попыток)
+#define mirf_CONFIG ((1<<EN_CRC) | (1<<CRCO) | (1<<MASK_TX_DS) | (1<<MASK_RX_DR))		//	 пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 16 пїЅпїЅпїЅ CRC пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ TX, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ RX (пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 
-#define mirf_ACK 1			//auto ack enabled	//	включить или отключить автоподтвержедния
-//#define mirf_RETR 0x00		//auto ack enabled	//	(4-е бита) время ожидания и (4-е бита) количество повторов при не получении автоподтверждения
+#define mirf_ACK 1			//auto ack enabled	//	пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+//#define mirf_RETR 0x00		//auto ack enabled	//	(4-пїЅ пїЅпїЅпїЅпїЅ) пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ (4-пїЅ пїЅпїЅпїЅпїЅ) пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
-#define mirf_ENABLED_P0 1	//	включить 0-ю трубу
-#define mirf_ENABLED_P1 1	//	включить 1-ю трубу	(пока выкл)
+#define mirf_ENABLED_P0 1	//	пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 0-пїЅ пїЅпїЅпїЅпїЅпїЅ
+#define mirf_ENABLED_P1 1	//	пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 1-пїЅ пїЅпїЅпїЅпїЅпїЅ	(пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ)
 #define mirf_ENABLED_P2 0
 #define mirf_ENABLED_P3 0
 #define mirf_ENABLED_P4 0
 #define mirf_ENABLED_P5 0
 
-
-//	вспомогательные макросы
-#define MIRF_CSN_HI() do{sbit(NRF_CSN_PORT,NRF_CSN_PIN_NUM);}while(0)		//	неактивный режим
-#define MIRF_CSN_LO() do{cbit(NRF_CSN_PORT,NRF_CSN_PIN_NUM);}while(0)		//	активный режим
+/*
+//	пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+#define MIRF_CSN_HI() do{sbit(NRF_CSN_PORT,NRF_CSN_PIN_NUM);}while(0)		//	пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+#define MIRF_CSN_LO() do{cbit(NRF_CSN_PORT,NRF_CSN_PIN_NUM);}while(0)		//	пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 
 #define MIRF_CE_HI() do{sbit(NRF_CE_PORT,NRF_CE_PIN_NUM);}while(0)
 #define MIRF_CE_LO() do{cbit(NRF_CE_PORT,NRF_CE_PIN_NUM);}while(0)
-
+*/
 
 uint8_t spi_writeread (uint8_t data);
 

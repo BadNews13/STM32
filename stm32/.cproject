@@ -49,6 +49,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/blink}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/LCD_1602}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/delay_ms}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/spi}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/mirf}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/EXTI}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1747706187" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -71,6 +74,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/blink}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/LCD_1602}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/delay_ms}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/spi}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/mirf}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/stm32/EXTI}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp.580261195" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp"/>
 							</tool>
@@ -97,6 +103,7 @@
 					<sourceEntries>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="CMSIS"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Core"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="EXTI"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="LCD_1602"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="RTOS"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Startup"/>
@@ -104,6 +111,8 @@
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="delay_ms"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="dma"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="gpio"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="mirf"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="spi"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="uart"/>
 					</sourceEntries>
 				</configuration>

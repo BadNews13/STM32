@@ -1,64 +1,70 @@
-#include "../defines/defines_global.h"
-#include <util/delay.h>
+//#include "../defines/defines_global.h"
+//#include <util/delay.h>
+
 #include "mirf.h"
 #include "nRF24L01.h"
-#include "../spi/spi.h"
+#include "spi_1.h"
+#include "exti.h"
+#include <delay_us.h>
+#include <delay_ms.h>
 
-#include "../uart/uart.h"	//	для отладки
-#include <avr/interrupt.h>
+
+#include "uart_2.h"	//	пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+
 
 //extern			uint8_t		MIRF_pack[MAX_PACK_LENGTH];
+uint8_t in_data_to_mirf_for_test[mirf_PAYLOAD];
+
 
 void MIRF_SET_TX(void)
 {
-	cli();
-	uint8_t tmp_config = mirf_read_register(CONFIG);	//	получим текущие настройки из чипа
-	sbit(tmp_config,PWR_UP);							//	включим питание антены
-	cbit(tmp_config,PRIM_RX);							//	переведем в режим передатчика
-	mirf_write_register(CONFIG, tmp_config);			//	запишем новые настройки
-	MIRF_CE_LO();										//	в ноль ( в этом режиме импульс (10 мкс) на CE запускает отправку из буфера FIFO)
-	_delay_ms(50);										//	время для выхода антены в штатный режим работы
-	sei();
+	uint8_t tmp_config = mirf_read_register(CONFIG);	//	РїРѕР»СѓС‡РёРј С‚РµРєСѓС‰РёРµ РЅР°СЃС‚СЂРѕР№РєРё РёР· С‡РёРїР°
+	SET_BIT(tmp_config,PWR_UP);							//	РІРєР»СЋС‡РёРј РїРёС‚Р°РЅРёРµ Р°РЅС‚РµРЅС‹
+	CLEAR_BIT(tmp_config,PRIM_RX);							//	РїРµСЂРµРІРµРґРµРј РІ СЂРµР¶РёРј РїРµСЂРµРґР°С‚С‡РёРєР°
+	mirf_write_register(CONFIG, tmp_config);			//	Р·Р°РїРёС€РµРј РЅРѕРІС‹Рµ РЅР°СЃС‚СЂРѕР№РєРё
+	delay_ms(50);										//	РІСЂРµРјСЏ РґР»СЏ РІС‹С…РѕРґР° Р°РЅС‚РµРЅС‹ РІ С€С‚Р°С‚РЅС‹Р№ СЂРµР¶РёРј СЂР°Р±РѕС‚С‹
+	NRF_CE_RESET();										//	РІ РЅРѕР»СЊ ( РІ СЌС‚РѕРј СЂРµР¶РёРјРµ РёРјРїСѓР»СЊСЃ (10 РјРєСЃ) РЅР° CE Р·Р°РїСѓСЃРєР°РµС‚ РѕС‚РїСЂР°РІРєСѓ РёР· Р±СѓС„РµСЂР° FIFO)
 }
 
 void MIRF_SET_RX(void)
 {
-	cli();
-	uint8_t tmp_config = mirf_read_register(CONFIG);	//	получим текущие настройки из чипа
-	sbit(tmp_config,PWR_UP);							//	включим питание антены
-	sbit(tmp_config,PRIM_RX);							//	переведем в режим приемника
-	mirf_write_register(CONFIG, tmp_config);			//	запишем новые настройки
-	MIRF_CE_HI();										//	в режиме RX значение на CE(high) запускает прослушивание эфира
-	_delay_ms(50);										//	время для выхода антены в штатный режим работы
-	sei();
+	uint8_t tmp_config = mirf_read_register(CONFIG);	//	РїРѕР»СѓС‡РёРј С‚РµРєСѓС‰РёРµ РЅР°СЃС‚СЂРѕР№РєРё РёР· С‡РёРїР°
+	SET_BIT(tmp_config,PWR_UP);							//	РІРєР»СЋС‡РёРј РїРёС‚Р°РЅРёРµ Р°РЅС‚РµРЅС‹
+	SET_BIT(tmp_config,PRIM_RX);							//	РїРµСЂРµРІРµРґРµРј РІ СЂРµР¶РёРј РїСЂРёРµРјРЅРёРєР°
+	mirf_write_register(CONFIG, tmp_config);			//	Р·Р°РїРёС€РµРј РЅРѕРІС‹Рµ РЅР°СЃС‚СЂРѕР№РєРё
+	delay_ms(15);										//	РІСЂРµРјСЏ РґР»СЏ РІС‹С…РѕРґР° Р°РЅС‚РµРЅС‹ РІ С€С‚Р°С‚РЅС‹Р№ СЂРµР¶РёРј СЂР°Р±РѕС‚С‹
+	NRF_CE_SET();										//	РІ СЂРµР¶РёРјРµ RX Р·РЅР°С‡РµРЅРёРµ РЅР° CE(high) Р·Р°РїСѓСЃРєР°РµС‚ РїСЂРѕСЃР»СѓС€РёРІР°РЅРёРµ СЌС„РёСЂР°
 }
 
 void MIRF_SET_PD(void)
 {
-	uint8_t tmp_config = mirf_read_register(CONFIG);	//	получим текущие настройки из чипа
-	cbit(tmp_config,PWR_UP);							//	выключим питание антены
-	sbit(tmp_config,PRIM_RX);							//	переведем в режим передатчика
-	mirf_write_register(CONFIG, tmp_config);			//	запишем новые настройки
-	MIRF_CE_LO();
+	uint8_t tmp_config = mirf_read_register(CONFIG);	//	РїРѕР»СѓС‡РёРј С‚РµРєСѓС‰РёРµ РЅР°СЃС‚СЂРѕР№РєРё РёР· С‡РёРїР°
+	CLEAR_BIT(tmp_config,PWR_UP);							//	РІС‹РєР»СЋС‡РёРј РїРёС‚Р°РЅРёРµ Р°РЅС‚РµРЅС‹
+	SET_BIT(tmp_config,PRIM_RX);							//	РїРµСЂРµРІРµРґРµРј РІ СЂРµР¶РёРј РїРµСЂРµРґР°С‚С‡РёРєР°
+	mirf_write_register(CONFIG, tmp_config);			//	Р·Р°РїРёС€РµРј РЅРѕРІС‹Рµ РЅР°СЃС‚СЂРѕР№РєРё
+	NRF_CE_RESET();
 }
+
+
+
 
 void setRetries(uint8_t delay, uint8_t count)
 {
-	mirf_write_register(SETUP_RETR, (delay & 0xf) << ARD | (count & 0xf) << ARC);
+	NRF_write_reg(SETUP_RETR, (delay & 0xf) << ARD | (count & 0xf) << ARC);
 }
 
 uint8_t mirf_cmd(uint8_t cmd)
 {
 	uint8_t status = 0;
-	MIRF_CSN_LO();
-	status = spi_writeread(cmd);
-	MIRF_CSN_HI();
+	NRF_CS_ON();
+	status = SPI1_put_byte(cmd);
+	NRF_CS_OFF();
 	return status;
 }
 
 void mirf_powerUp(void)
 {
-	//без включенного питания можно только общаться по SPI с чипом (радиообмен невозможен)
+	//пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ SPI пїЅ пїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 	uint8_t cfg = mirf_read_register(CONFIG);
 
 	// if not powered up then power up and wait for the radio to initialize
@@ -74,76 +80,72 @@ void mirf_powerUp(void)
 //initialize mirf
 uint8_t mirf_init(void)
 {
-	//	Порты
-	//	Внешнее рерывание
-	//	SPI
-		
-	uint8_t setup = 0;
-	    
-	MIRF_CE_LO();	//	CE: Chip Enable. Зависит от режима работы. Если чип сконфигурен как приемник, то высокий (HIGH) уровень на CE позволяет чипу мониторить среду и получать пакеты. Низкий (LOW) уровень переводит чип в Standby-I и такая возможность становится уже недоступна. Если чип настроен на передачу, CE всегда держится на низком уровне. В этом случае для передачи данных нужно положить их в очередь FIFO и дернуть CE минимум на 10мкс (LOW->HIGH, 10мкс, HIGH->LOW).
-	MIRF_CSN_HI();	//	активный уровень - низкий (после того как пообщались - переводим в высокий) (при инициалисзации обязательно к +)
+	SPI1_Init();		//	РґР»СЏ РѕР±С‰РµРЅРёСЏ СЃ С‡РёРїРѕРј РЅСѓР¶РµРЅ SPI
+	GPIO_mirf_Init();	//	РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РѕСЃС‚Р°Р»СЊРЅС‹С… РїРёРЅРѕРІ Рє РєРѕС‚РѕСЂС‹Рј РїРѕРґРєР»СЋС‡РµРЅ РјРѕРґСѓР»СЊ
+	EXTI_Init();		//	РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РІРЅРµС€РЅРµРіРѕ РїСЂРµСЂС‹РІР°РЅРёСЏ, РґР»СЏ СЂРµР°РєС†РёРё РЅР° РїСЂРµСЂС‹РІР°РЅРёРµ РѕС‚ РјРѕРґСѓР»СЏ
 
-	mirf_write_register(CONFIG, (1 << EN_CRC) | (1 << CRCO) | (1 << PWR_UP) | (1 << PRIM_RX));	    // Reset NRF_CONFIG and enable 16-bit CRC. (включить 16-и битную контрольную сумму)
-    
-//	setRetries(150, 2);	//	настроим паузу и количество повторных попыток
-		
-	mirf_write_register(RF_SETUP, (1<<RF_DR_HIGH));			//	установим скорость передачи данных (max)
-	mirf_write_register(FEATURE, 0x04);																		//	запретить: передавать пакеты не требующие ACK; передавать данные вместе с ACK пакетом; поле данных разной длины
-	mirf_write_register(DYNPD, (1 << DPL_P0) | (1 << DPL_P1));												//	запретим прием пакетов произвольной длины по всем каналам
+	NRF_CE_RESET();		//	CE: Chip Enable. Р—Р°РІРёСЃРёС‚ РѕС‚ СЂРµР¶РёРјР° СЂР°Р±РѕС‚С‹. Р•СЃР»Рё С‡РёРї СЃРєРѕРЅС„РёРіСѓСЂРµРЅ РєР°Рє РїСЂРёРµРјРЅРёРє, С‚Рѕ РІС‹СЃРѕРєРёР№ (HIGH) СѓСЂРѕРІРµРЅСЊ РЅР° CE РїРѕР·РІРѕР»СЏРµС‚ С‡РёРїСѓ РјРѕРЅРёС‚РѕСЂРёС‚СЊ СЃСЂРµРґСѓ Рё РїРѕР»СѓС‡Р°С‚СЊ РїР°РєРµС‚С‹. РќРёР·РєРёР№ (LOW) СѓСЂРѕРІРµРЅСЊ РїРµСЂРµРІРѕРґРёС‚ С‡РёРї РІ Standby-I Рё С‚Р°РєР°СЏ РІРѕР·РјРѕР¶РЅРѕСЃС‚СЊ СЃС‚Р°РЅРѕРІРёС‚СЃСЏ СѓР¶Рµ РЅРµРґРѕСЃС‚СѓРїРЅР°. Р•СЃР»Рё С‡РёРї РЅР°СЃС‚СЂРѕРµРЅ РЅР° РїРµСЂРµРґР°С‡Сѓ, CE РІСЃРµРіРґР° РґРµСЂР¶РёС‚СЃСЏ РЅР° РЅРёР·РєРѕРј СѓСЂРѕРІРЅРµ. Р’ СЌС‚РѕРј СЃР»СѓС‡Р°Рµ РґР»СЏ РїРµСЂРµРґР°С‡Рё РґР°РЅРЅС‹С… РЅСѓР¶РЅРѕ РїРѕР»РѕР¶РёС‚СЊ РёС… РІ РѕС‡РµСЂРµРґСЊ FIFO Рё РґРµСЂРЅСѓС‚СЊ CE РјРёРЅРёРјСѓРј РЅР° 10РјРєСЃ (LOW->HIGH, 10РјРєСЃ, HIGH->LOW).
+	NRF_CS_OFF();		//	РїРѕРґРЅРёРјР°РµРј Р»РёРЅРёСЋ (РѕР±С‰РµРЅРёРµ РѕРєРѕРЅС‡РµРЅРѕ) //	Р°РєС‚РёРІРЅС‹Р№ СѓСЂРѕРІРµРЅСЊ - РЅРёР·РєРёР№ (РїРѕСЃР»Рµ С‚РѕРіРѕ РєР°Рє РїРѕРѕР±С‰Р°Р»РёСЃСЊ - РїРµСЂРµРІРѕРґРёРј РІ РІС‹СЃРѕРєРёР№) (РїСЂРё РёРЅРёС†РёР°Р»РёСЃР·Р°С†РёРё РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ Рє +)
 
-	mirf_write_register(RF_CH, mirf_CH);	//	номер радиоканала от 0 до 125
+	NRF_write_reg(CONFIG, (1 << EN_CRC) | (1 << CRCO) | (1 << PWR_UP) | (1 << PRIM_RX));	    // Reset NRF_CONFIG and enable 16-bit CRC. (РІРєР»СЋС‡РёС‚СЊ 16-Рё Р±РёС‚РЅСѓСЋ РєРѕРЅС‚СЂРѕР»СЊРЅСѓСЋ СЃСѓРјРјСѓ)
+
+	delay_ms(50);//	Р·Р°РґРµСЂР¶РєР°, С‡С‚РѕР±С‹ С‡РёРї Р·Р°РїСѓСЃС‚РёР»СЃСЏ
+
+	setRetries(150, 2);												//	РЅР°СЃС‚СЂРѕРёРј РїР°СѓР·Сѓ Рё РєРѕР»РёС‡РµСЃС‚РІРѕ РїРѕРІС‚РѕСЂРЅС‹С… РїРѕРїС‹С‚РѕРє
+	NRF_write_reg(RF_SETUP, (1<<RF_DR_HIGH));						//	СѓСЃС‚Р°РЅРѕРІРёРј СЃРєРѕСЂРѕСЃС‚СЊ РїРµСЂРµРґР°С‡Рё РґР°РЅРЅС‹С… (max)
+	NRF_write_reg(FEATURE, 0x04);									//	Р·Р°РїСЂРµС‚РёС‚СЊ: РїРµСЂРµРґР°РІР°С‚СЊ РїР°РєРµС‚С‹ РЅРµ С‚СЂРµР±СѓСЋС‰РёРµ ACK; РїРµСЂРµРґР°РІР°С‚СЊ РґР°РЅРЅС‹Рµ РІРјРµСЃС‚Рµ СЃ ACK РїР°РєРµС‚РѕРј; РїРѕР»Рµ РґР°РЅРЅС‹С… СЂР°Р·РЅРѕР№ РґР»РёРЅС‹
+	NRF_write_reg(DYNPD, (1 << DPL_P0) | (1 << DPL_P1));			//	Р·Р°РїСЂРµС‚РёРј РїСЂРёРµРј РїР°РєРµС‚РѕРІ РїСЂРѕРёР·РІРѕР»СЊРЅРѕР№ РґР»РёРЅС‹ РїРѕ РІСЃРµРј РєР°РЅР°Р»Р°Рј
+
+	NRF_write_reg(RF_CH, mirf_CH);	//	РЅРѕРјРµСЂ СЂР°РґРёРѕРєР°РЅР°Р»Р° РѕС‚ 0 РґРѕ 125
+
+	//	8-Р±РёС‚РЅС‹Рµ СЂРµРіРёСЃС‚СЂС‹, Р·Р°РґР°СЋС‰РёРµ СЂР°Р·РјРµСЂ РґР°РЅРЅС‹С…, РїСЂРёРЅРёРјР°РµРјС‹С… РїРѕ РєР°РЅР°Р»Р°Рј (С‚СЂСѓР±Р°Рј), СЃРѕРѕС‚РІРµС‚СЃС‚РІРµРЅРЅРѕ 0-5
+	NRF_write_reg(RX_PW_P0, mirf_PAYLOAD);		//length of incoming payload
+	NRF_write_reg(RX_PW_P1, mirf_PAYLOAD);
+	NRF_write_reg(RX_PW_P2, mirf_PAYLOAD);
+	NRF_write_reg(RX_PW_P3, mirf_PAYLOAD);
+	NRF_write_reg(RX_PW_P4, mirf_PAYLOAD);
+	NRF_write_reg(RX_PW_P5, mirf_PAYLOAD);
 	
-	//	8-битные регистры, задающие размер данных, принимаемых по каналам (трубам), соответственно 0-5
-	mirf_write_register(RX_PW_P0, mirf_PAYLOAD);		//length of incoming payload
-	mirf_write_register(RX_PW_P1, mirf_PAYLOAD);
-	mirf_write_register(RX_PW_P2, mirf_PAYLOAD);
-	mirf_write_register(RX_PW_P3, mirf_PAYLOAD);
-	mirf_write_register(RX_PW_P4, mirf_PAYLOAD);
-	mirf_write_register(RX_PW_P5, mirf_PAYLOAD);
+	NRF_write_reg(EN_AA, 0);		//	(РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ РЅР° 0-Р№ РєР°РЅР°Р» (С‚СЂСѓР±Сѓ)
 	
-	mirf_write_register(EN_AA, 0x00);	// указывает по каким трубам отправлять автоподтвержедние
-	
-	//Выбирает активные каналы (трубы) приёмника. (если включено автопотверждение то канал 0 должен быть активный (в него приходят ACK)
-	mirf_write_register(EN_RXADDR, 0x00);	//	для начало все отключим
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅ) пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ. (пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ 0 пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ ACK)
+	mirf_write_register(EN_RXADDR, 0x00);	//	пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	#if mirf_ENABLED_P0 == 1	
-		mirf_write_register(EN_RXADDR, mirf_read_register(EN_RXADDR) | (1<<ERX_P0));
+		NRF_write_reg(EN_RXADDR, NRF_read_reg(EN_RXADDR) | (1<<ERX_P0));
 	#endif
 	#if mirf_ENABLED_P1 == 1
-		mirf_write_register(EN_RXADDR, mirf_read_register(EN_RXADDR) | (1<<ERX_P1));
+		NRF_write_reg(EN_RXADDR, NRF_read_reg(EN_RXADDR) | (1<<ERX_P1));
 	#endif
 	#if mirf_ENABLED_P2 == 1
-		mirf_write_register(EN_RXADDR, mirf_read_register(EN_RXADDR) | (1<<ERX_P2));
+		NRF_write_reg(EN_RXADDR, NRF_read_reg(EN_RXADDR) | (1<<ERX_P2));
 	#endif
 	#if mirf_ENABLED_P3 == 1
-		mirf_write_register(EN_RXADDR, mirf_read_register(EN_RXADDR) | (1<<ERX_P3));
+		NRF_write_reg(EN_RXADDR, NRF_read_reg(EN_RXADDR) | (1<<ERX_P3));
 	#endif
 	#if mirf_ENABLED_P4 == 1
-		mirf_write_register(EN_RXADDR, mirf_read_register(EN_RXADDR) | (1<<ERX_P4));
+		NRF_write_reg(EN_RXADDR, NRF_read_reg(EN_RXADDR) | (1<<ERX_P4));
 	#endif
 	#if mirf_ENABLED_P5 == 1		
-		mirf_write_register(EN_RXADDR, mirf_read_register(EN_RXADDR) | (1<<ERX_P5));
+		NRF_write_reg(EN_RXADDR, NRF_read_reg(EN_RXADDR) | (1<<ERX_P5));
 	#endif
 
-
-	mirf_write_register(SETUP_AW, adr_3_bytes);	//	настраивает длину адреса (длиной 5 байт)
+	NRF_write_reg(SETUP_AW, adr_3_bytes);	//	пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ 5 пїЅпїЅпїЅпїЅ)
 
 	// Flush buffers
 	mirf_cmd(FLUSH_RX);
 	mirf_cmd(FLUSH_TX);
 	
-	mirf_write_register(STATUS, (1<<RX_DR)|(1<<TX_DS)|(1<<MAX_RT));		// сбросим флаги прерывания
+	NRF_write_reg(STATUS, (1<<RX_DR)|(1<<TX_DS)|(1<<MAX_RT));		// СЃР±СЂРѕСЃРёРј С„Р»Р°РіРё РїСЂРµСЂС‹РІР°РЅРёСЏ
 	
-	MIRF_CSN_HI();	//	конец общения с чипом
+	NRF_CS_OFF();	//	РѕР±С‰РµРЅРёРµ СЃ С‡РёРїРѕРј Р·Р°РєРѕРЅС‡РёР»РѕСЃСЊ
 	
-	// if setup is 0 or ff then there was no response from module
-	return (setup != 0 && setup != 0xff);
 }
 
 
-//set rx address (устанавливает собственный адрес для одного из канала (трубы))
+//set rx address (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅ))
 void mirf_set_rxaddr(uint8_t channel, uint8_t *addr)
 {
-    MIRF_CE_LO();
+	NRF_CE_RESET();
     switch(channel)
     {
     	case 0:		{mirf_write_registers(RX_ADDR_P0, addr, 3);		break;}
@@ -153,10 +155,10 @@ void mirf_set_rxaddr(uint8_t channel, uint8_t *addr)
     	case 4:		{mirf_write_registers(RX_ADDR_P4, addr, 3);		break;}
     	case 5:		{mirf_write_registers(RX_ADDR_P5, addr, 3);		break;}
     }
-    MIRF_CE_HI();
+    NRF_CE_SET();
 }
 
-//set tx address	(адрес удаленного устройства. по умолчанию E7E7E7E7E7)
+//set tx address	(пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ. пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ E7E7E7E7E7)
 void mirf_set_txaddr(uint8_t *addr)
 {
     mirf_write_registers(TX_ADDR, addr, 3);
@@ -166,21 +168,22 @@ void mirf_set_txaddr(uint8_t *addr)
 uint8_t mirf_get_status(void)
 {
 	uint8_t status = 0;
-	MIRF_CSN_LO();
-	status = spi_writeread(NOP);
-	MIRF_CSN_HI();
+	NRF_CS_ON();
+	status = SPI1_put_byte(NOP);
+	NRF_CS_OFF();
 	return status;
 }
 
 //read one register
 uint8_t mirf_read_register(uint8_t reg)
-{
+{/*
 	uint8_t result;
 	MIRF_CSN_LO();
 	spi_writeread(R_REGISTER | (REGISTER_MASK & reg));
 	result = spi_writeread(NOP);
     MIRF_CSN_HI();
     return result;
+    */
 }
 
 //read many registers
@@ -188,8 +191,8 @@ void mirf_read_registers(uint8_t reg, uint8_t *value, uint8_t len)
 {
 	uint8_t i;
     MIRF_CSN_LO();
-	spi_writeread(R_REGISTER | (REGISTER_MASK & reg));
-	for (i = 0; i < len; i++)    {value[i] = spi_writeread(NOP);}
+    SPI1_put_byte(R_REGISTER | (REGISTER_MASK & reg));
+	for (i = 0; i < len; i++)    {value[i] = SPI1_put_byte(NOP);}
     MIRF_CSN_HI();
 }
 
@@ -197,10 +200,16 @@ void mirf_read_registers(uint8_t reg, uint8_t *value, uint8_t len)
 uint8_t mirf_write_register(uint8_t reg, uint8_t value)
 {
 	uint8_t status = 0;
-	MIRF_CSN_LO();
-	spi_writeread(W_REGISTER | (REGISTER_MASK & reg));
-	spi_writeread(value);
-	MIRF_CSN_HI();
+	NRF_CS_ON();
+
+	SPI1_put_byte(W_REGISTER | (REGISTER_MASK & reg));
+//	WRITE_REG(SPI1->DR, W_REGISTER | (REGISTER_MASK & reg));
+
+	SPI1_put_byte(value);
+//	WRITE_REG(SPI1->DR, value);
+
+	NRF_CS_OFF();
+
 	return status;	
 }
 
@@ -208,10 +217,10 @@ uint8_t mirf_write_register(uint8_t reg, uint8_t value)
 void mirf_write_registers(uint8_t reg, uint8_t *value, uint8_t len)
 {
 	uint8_t i;
-	MIRF_CSN_LO();
-	spi_writeread(W_REGISTER | (REGISTER_MASK & reg));
-	for (i = 0; i < len; i++)		{spi_writeread(value[i]);}
-	MIRF_CSN_HI();
+	NRF_CS_ON();
+	SPI1_put_byte(W_REGISTER | (REGISTER_MASK & reg));
+	for (i = 0; i < len; i++)		{SPI1_put_byte(value[i]);}
+	NRF_CS_OFF();
 }
 
 //check if there is rx data
@@ -231,36 +240,40 @@ uint8_t mirf_write_ready(void)
 void mirf_read(uint8_t *data)
 {
 	volatile uint8_t i;
-    MIRF_CSN_LO();
-	spi_writeread(R_RX_PAYLOAD);
-    for(i = 0; i < mirf_PAYLOAD; i++)		{data[i] = spi_writeread(NOP);}
-    MIRF_CSN_HI();
+	NRF_CS_ON();
+	SPI1_put_byte(R_RX_PAYLOAD);
+    for(i = 0; i < mirf_PAYLOAD; i++)		{data[i] = SPI1_put_byte(NOP);}
+    NRF_CS_OFF();
 }
 
 
 void mirf_write(uint8_t *data)
 {
+
 	volatile uint8_t i;
 
-	MIRF_CE_LO();		//	плюс запустит отправку. Поэтому прижмем на всякий случай
+	NRF_CE_RESET();		//	РїР»СЋСЃ Р·Р°РїСѓСЃС‚РёС‚ РѕС‚РїСЂР°РІРєСѓ. РџРѕСЌС‚РѕРјСѓ РїСЂРёР¶РјРµРј РЅР° РІСЃСЏРєРёР№ СЃР»СѓС‡Р°Р№
 
 	//write data
-	MIRF_CSN_LO();		//	низкий уровень на CSN запускает общение с чипом по SPI
-	spi_writeread( W_TX_PAYLOAD );
-	for (i = 0; i < mirf_PAYLOAD; i++)   {spi_writeread(data[i]);}
-	MIRF_CSN_HI();
-	
-	//start transmission
-	MIRF_CE_HI();
-	_delay_us(15);
-	MIRF_CE_LO();	
+	NRF_CS_ON();		//	РЅРёР·РєРёР№ СѓСЂРѕРІРµРЅСЊ РЅР° CSN Р·Р°РїСѓСЃРєР°РµС‚ РѕР±С‰РµРЅРёРµ СЃ С‡РёРїРѕРј РїРѕ SPI
+	SPI1_put_byte( W_TX_PAYLOAD );
+	for (i = 0; i < mirf_PAYLOAD; i++)   {SPI1_put_byte(data[i]);}
+	NRF_CS_OFF();
 
-/*	// проверим успешна ли отпрака (пришло ли подтверждение на канал 0)		 (нафиг она нужна? - он же зависнет если никто не примет. Разве что если по таймеру чистить mirf)				
+	//start transmission
+	NRF_CE_SET();
+	delay_us(15);
+	NRF_CE_RESET();
+
+/*	// РїСЂРѕРІРµСЂРёРј СѓСЃРїРµС€РЅР° Р»Рё РѕС‚РїСЂР°РєР° (РїСЂРёС€Р»Рѕ Р»Рё РїРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ РЅР° РєР°РЅР°Р» 0)		 (РЅР°С„РёРі РѕРЅР° РЅСѓР¶РЅР°? - РѕРЅ Р¶Рµ Р·Р°РІРёСЃРЅРµС‚ РµСЃР»Рё РЅРёРєС‚Рѕ РЅРµ РїСЂРёРјРµС‚. Р Р°Р·РІРµ С‡С‚Рѕ РµСЃР»Рё РїРѕ С‚Р°Р№РјРµСЂСѓ С‡РёСЃС‚РёС‚СЊ mirf)
 	while( !(mirf_get_status() & (1<<TX_DS)) )
 	{
 //		sei();
 		_delay_us(1);
 	}*/
+
+	mirf_write_register(STATUS, (1<<TX_DS));	// СЃР±СЂРѕСЃРёРј С„Р»Р°Рі СѓСЃРїРµС€РЅРѕР№ РїРµСЂРµРґР°С‡Рё
+
 }
 
 void mirf_clear(void)
@@ -269,7 +282,7 @@ void mirf_clear(void)
 	mirf_cmd(FLUSH_RX);
 	mirf_cmd(FLUSH_TX);
 		
-	mirf_write_register(STATUS, (1<<RX_DR)|(1<<TX_DS)|(1<<MAX_RT));		// сбросим флаги прерывания
+	mirf_write_register(STATUS, (1<<RX_DR)|(1<<TX_DS)|(1<<MAX_RT));		// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 /*	
 	uint8_t tmp = 0;
 	tmp = mirf_get_status();
@@ -293,29 +306,87 @@ void mirf_rx_clear(void)
 
 void mirf_int_vect (void)
 {
+
 	uint8_t status_mirf;
-	status_mirf = mirf_get_status();					//	запрашиваем статус nRF24L01
-	uint8_t tmp_status = status_mirf | 0x8F;			//	скопируем все кроме флагов (перезапись в 1 сбрасивает флаг)
+	status_mirf = mirf_get_status();					//	Р·Р°РїСЂР°С€РёРІР°РµРј СЃС‚Р°С‚СѓСЃ nRF24L01
 
-	if(bit_is_set(status_mirf,RX_DR))					//	если поднят флаг "получены данные"
+	if(READ_BIT(status_mirf,RX_DR))					//	РµСЃР»Рё РїРѕРґРЅСЏС‚ С„Р»Р°Рі "РїРѕР»СѓС‡РµРЅС‹ РґР°РЅРЅС‹Рµ"
 	{
-//		mirf_read(&MIRF_pack[0]);						//	считываем
-		sbit(tmp_status,RX_DR);							//	сбросим флаг успешного получения (в переменной)
+		mirf_read(&in_data_to_mirf_for_test[0]);		//	СЃС‡РёС‚С‹РІР°РµРј
+		for (uint8_t i=0; i<mirf_PAYLOAD; i++)	{put_byte_UART2(in_data_to_mirf_for_test[i]);}		//	РІС‹РІРµРґРµРј РІ uart С‡С‚Рѕ РїРѕР»СѓС‡РёР»Рё
+	}
 
-//		for (uint8_t i=0; i<mirf_PAYLOAD; i++)	{put_byte(MIRF_pack[i]);}		//	выведем в uart что получили (удалить после отладки)
-	}
-	
-	if(bit_is_set(status_mirf,TX_DS))					//	если поднят флаг "Данные успешно отправлены"
+
+	/*
+	uint8_t status_mirf;
+	status_mirf = mirf_get_status();					//	Р·Р°РїСЂР°С€РёРІР°РµРј СЃС‚Р°С‚СѓСЃ nRF24L01
+	uint8_t tmp_status = status_mirf | 0x8F;			//	СЃРєРѕРїРёСЂСѓРµРј РІСЃРµ РєСЂРѕРјРµ С„Р»Р°РіРѕРІ (РїРµСЂРµР·Р°РїРёСЃСЊ РІ 1 СЃР±СЂР°СЃРёРІР°РµС‚ С„Р»Р°Рі)
+
+	if(READ_BIT(status_mirf,RX_DR))						//	РµСЃР»Рё РїРѕРґРЅСЏС‚ С„Р»Р°Рі "РїРѕР»СѓС‡РµРЅС‹ РґР°РЅРЅС‹Рµ"
 	{
-		sbit(tmp_status,TX_DS);							//	сбросим флаг "Данные успешно отправлены"
+//		mirf_read(&MIRF_pack[0]);						//	СЃС‡РёС‚С‹РІР°РµРј
+		SET_BIT(tmp_status,RX_DR);						//	СЃР±СЂРѕСЃРёРј С„Р»Р°Рі СѓСЃРїРµС€РЅРѕРіРѕ РїРѕР»СѓС‡РµРЅРёСЏ (РІ РїРµСЂРµРјРµРЅРЅРѕР№)
+
+//		for (uint8_t i=0; i<mirf_PAYLOAD; i++)	{put_byte(MIRF_pack[i]);}		//	РІС‹РІРµРґРµРј РІ uart С‡С‚Рѕ РїРѕР»СѓС‡РёР»Рё (СѓРґР°Р»РёС‚СЊ РїРѕСЃР»Рµ РѕС‚Р»Р°РґРєРё)
 	}
 	
-	if(bit_is_set(status_mirf,MAX_RT))					//	если поднят флаг "Превышения попыток отправки"
+	if(READ_BIT(status_mirf,TX_DS))						//	РµСЃР»Рё РїРѕРґРЅСЏС‚ С„Р»Р°Рі "Р”Р°РЅРЅС‹Рµ СѓСЃРїРµС€РЅРѕ РѕС‚РїСЂР°РІР»РµРЅС‹"
 	{
-		sbit(tmp_status,MAX_RT);						//	сбросим флаг "Превышения попыток отправки"
-		mirf_cmd(FLUSH_TX);								//	очистим буфер отправки
+		READ_BIT(tmp_status,TX_DS);						//	СЃР±СЂРѕСЃРёРј С„Р»Р°Рі "Р”Р°РЅРЅС‹Рµ СѓСЃРїРµС€РЅРѕ РѕС‚РїСЂР°РІР»РµРЅС‹"
 	}
 	
-	mirf_write_register(STATUS, tmp_status);			//	сбросим флаги в NRF24L01 (запишем переменную в регистр)
+	if(READ_BIT(status_mirf,MAX_RT))					//	РµСЃР»Рё РїРѕРґРЅСЏС‚ С„Р»Р°Рі "РџСЂРµРІС‹С€РµРЅРёСЏ РїРѕРїС‹С‚РѕРє РѕС‚РїСЂР°РІРєРё"
+	{
+		READ_BIT(tmp_status,MAX_RT);						//	СЃР±СЂРѕСЃРёРј С„Р»Р°Рі "РџСЂРµРІС‹С€РµРЅРёСЏ РїРѕРїС‹С‚РѕРє РѕС‚РїСЂР°РІРєРё"
+		mirf_cmd(FLUSH_TX);								//	РѕС‡РёСЃС‚РёРј Р±СѓС„РµСЂ РѕС‚РїСЂР°РІРєРё
+	}
+	
+	mirf_write_register(STATUS, tmp_status);			//	СЃР±СЂРѕСЃРёРј С„Р»Р°РіРё РІ NRF24L01 (Р·Р°РїРёС€РµРј РїРµСЂРµРјРµРЅРЅСѓСЋ РІ СЂРµРіРёСЃС‚СЂ)
 	//	mirf_clear();
+
+	 */
+}
+
+
+void GPIO_mirf_Init (void)
+{
+	RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;
+	uint8_t offset;
+
+	// PB0 - NRF_CS
+	offset = NRF_CE * 4;							//	0 * 4 = 16
+	GPIOB->CRL &= ~( GPIO_BITS_MASK << offset );	//	СЃС‚РµСЂРµС‚СЊ 4 Р±РёС‚Р°
+	GPIOB->CRL |= ( OUTPUT_PUSH_PULL << offset );	//	Р·Р°РїРёСЃР°С‚СЊ 4 Р±РёС‚Р°
+	//GPIOB->BSRR = ( 1 << NRF_CE );				//	СѓСЃС‚Р°РЅРѕРІРєР° Р»РёРЅРёРё РІ 1
+	//GPIOB->BRR = ( 1 << NRF_CE );					//	СѓСЃС‚Р°РЅРѕРІРєР° Р»РёРЅРёРё РІ 0
+
+
+	// PB10 - NRF_CS								//	РІС‹Р±СЂР°С‚СЊ С‡РёРї
+	offset = ( NRF_CS - 8 ) * 4;					//	( 10 - 8 ) * 4 = 28
+	GPIOB->CRH &= ~( GPIO_BITS_MASK << offset );	//	СЃС‚РµСЂРµС‚СЊ 4 Р±РёС‚Р°
+	GPIOB->CRH |= ( OUTPUT_PUSH_PULL << offset );	//	Р·Р°РїРёСЃР°С‚СЊ 4 Р±РёС‚Р°
+	//GPIOB->BSRR = ( 1 << NRF_CSN );				//	СѓСЃС‚Р°РЅРѕРІРєР° Р»РёРЅРёРё РІ 1
+	//GPIOB->BRR = ( 1 << NRF_CSN );				//	СѓСЃС‚Р°РЅРѕРІРєР° Р»РёРЅРёРё РІ 0
+}
+
+
+uint8_t NRF_write_reg (uint8_t adr, uint8_t data)
+{
+	uint8_t rx_byte;					//	РґР»СЏ РѕС‚РІРµС‚Р°
+	adr |= W_REGISTER;					//	Р°РґСЂРµСЃ Р·Р°РЅРёРјР°РµС‚ РјРµРЅСЊС€Рµ РІРѕСЃСЊРјРё Р±РёС‚, РїРѕСЌС‚РѕРјСѓ РЅР° Р±Р°Р№С‚ РЅР°РєР»Р°Р±С‹РІР°РµС‚СЃСЏ РјР°СЃРєР° СЃ СѓРєР°Р·Р°РЅРёРµРј С‡С‚РµРЅРёСЏ РёР»Рё Р·Р°РїРёСЃРё
+	NRF_CS_ON();						//	РѕРїСѓСЃРєР°РµРј Р»РёРЅРёСЋ (РЅР°С‡РёРЅР°РµС‚СЃСЏ РѕР±С‰РµРЅРёРµ)
+				SPI1_put_byte(adr);		//	РѕС‚РїСЂР°РІР»СЏРµРј РєРѕРјР°РЅРґСѓ
+	rx_byte = 	SPI1_put_byte(data);	//	РѕС‚РїСЂР°РІР»СЏРµРј РґР°РЅРЅС‹Рµ Рё СЃРѕС…СЂР°РЅСЏРµРј РѕС‚РІРµС‚
+	NRF_CS_OFF();						//	РїРѕРґРЅРёРјР°РµРј Р»РёРЅРёСЋ (РѕР±С‰РµРЅРёРµ РѕРєРѕРЅС‡РµРЅРѕ)
+	return rx_byte;
+}
+
+uint8_t NRF_read_reg (uint8_t adr)
+{
+	uint8_t rx_byte;										//	РґР»СЏ РѕС‚РІРµС‚Р°
+	NRF_CS_ON();											//	РѕРїСѓСЃРєР°РµРј Р»РёРЅРёСЋ (РЅР°С‡РёРЅР°РµС‚СЃСЏ РѕР±С‰РµРЅРёРµ)
+						 rx_byte = SPI1_put_byte(adr);		//	РѕС‚РїСЂР°РІР»СЏРµРј Р°РґСЂРµСЃ СЂРµРіРёСЃС‚СЂР°
+	if (adr != 0xFF)	{rx_byte = SPI1_put_byte(0xFF);}	//	РµСЃР»Рё РѕС‚РІРµС‚ РІ СЃР»РµРґСѓСЋС‰РµРј Р±Р°Р№С‚Рµ
+	NRF_CS_OFF();											//	РїРѕРґРЅРёРјР°РµРј Р»РёРЅРёСЋ (РѕР±С‰РµРЅРёРµ РѕРєРѕРЅС‡РµРЅРѕ)
+	return rx_byte;
 }
