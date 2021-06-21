@@ -132,7 +132,7 @@ GPIOB->BSRR = ( 1 << 10 );							//	установка линии в 1 (диод
 */
 
 
-
+/*
 mirf_init();
 
 mirf_set_rxaddr(1,self_adr);	//	трубу №1 присвоить адрес (наш адрес)
@@ -142,36 +142,56 @@ mirf_set_rxaddr(0,remote_adr);	//	если включено ACK, то RX_ADR_P0 
 
 for (uint8_t i = 0; i<3; i++)	{put_byte_UART2(self_adr[i]);}
 
-uint8_t message[5] = {0x01, 0x02, 0x03, 0x04, 0x05};		//	тестовое сообщение
+
 
 if(master == 1)		{MIRF_SET_TX(); mirf_write(&message[0]);	put_byte_UART2(0xA1);}
 else				{MIRF_SET_RX();								put_byte_UART2(0xA2);}
+*/
 
+uint8_t message[5] = {0x01, 0x02, 0x03, 0x04, 0x05};		//	тестовое сообщение
+NRF_Init();
 
+// Open a writing and reading pipe on each radio, with opposite addresses
+if(master){
+	openWritingPipe(&self_adr[0]);		//  openWritingPipe(addresses[1]);			//	вещать умет только одна труба
+	openReadingPipe(1, &remote_adr[0]);	//  radio.openReadingPipe(1,addresses[0]);	//	слушать можем любую из пяти труб
+}else{
+	openWritingPipe(&remote_adr[0]);		//  radio.openWritingPipe(addresses[0]);
+	openReadingPipe(1, &self_adr[0]);	//  radio.openReadingPipe(1,addresses[1]);
+}
 
+// Start the radio listening for data
+startListening();
+
+uint8_t nrf_buf_tx[5];
 	while(1)
 	{
 		/*
 		put_byte_UART2(NRF_read_reg(0xFF));	//	получаем статус
 		for(uint8_t i = 0; i<10; i++)	{}
 		put_byte_UART2(NRF_read_reg(CONFIG));
-*/
+		*/
 
 #ifdef MIRF_Master
-		put_byte_UART2(0x0A); put_byte_UART2(0x01);
-		mirf_write(&message[0]);
+		put_byte_UART2(0x0A); put_byte_UART2(0x01);	//	чтобы было видно в консоле, что это мастер (передатчик). И что произола отпрака
+		//mirf_write(&message[0]);
+		stopListening();
+		write(&message[0]);
+
 #else
-		put_byte_UART2(0x0A); put_byte_UART2(0x02);
+		put_byte_UART2(0x0A); put_byte_UART2(0x02);	//	чтобы было видно в консоле, что это подчиненный (приемник).
+//		startListening();
+		read(&nrf_buf_tx[0],5);
+		for (uint8_t i = 0; i < 5; i++)	{put_byte_UART2(nrf_buf_tx[i]);}
 #endif
 
-
-		delay_ms(100);
-
+		delay_ms(1000);
 
 //		USART1->DR = 0xE1;
 //		USART2->DR = 0xE2;
 
 /*
+ 	 	//	пример работы с дисплеем (вывод полученных по uart данных)
 		LCD_Command(0x01);		//	очистка дисплея					(LCD_CLEAR)
 		delay_ms(2);			//	долгая операция
 		LCD_Command(LCD_SETDDRAMADDR | 0);	//	писать с нулевого адреса
@@ -181,36 +201,6 @@ else				{MIRF_SET_RX();								put_byte_UART2(0xA2);}
 		LCDsendString(&uart3_rx_buf[0]);
 */
 
-/*
-		GPIOA->BSRR = ( 1 << 2 );		// установка линии в 1
-		delay_ms(300);
-	//	GPIOA->BRR = ( 1 << 2 );		// установка линии в 0
-		delay_ms(300);
-*/
-	/*
-		port_C->setPin(13); 					// установка вывода в 1
-		delay_ms(300);
-		port_C->resetPin(13); 				// сброс вывода
-		delay_ms(300);
-	 */
-/*
-		put_byte_UART1(0x11);
-		put_byte_UART1(0x12);
-		put_byte_UART1(0x13);
-		put_byte_UART1(0x14);
-*/
-/*
-		put_byte_UART2(0x21);
-		put_byte_UART2(0x22);
-		put_byte_UART2(0x23);
-		put_byte_UART2(0x24);
-*/
-/*
-		put_byte_UART3(0x31);
-		put_byte_UART3(0x32);
-		put_byte_UART3(0x33);
-		put_byte_UART3(0x34);
-*/
 	}
 }
 

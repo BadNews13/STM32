@@ -5,20 +5,50 @@
 #include "nRF24L01.h"
 
 
-#define	MIRF_Master		//	это устройство - мастер. Если подчиненный, то закоментировать эту строку
+//#define	MIRF_Master		//	это устройство - мастер. Если подчиненный, то закоментировать эту строку
+
+#define NRF_CS_pin		10	//	B10
+#define NRF_CE_pin		0	//	B0
+
+#define LOW 	0
+#define HIGH 	1
+
+#define RF24_1MBPS		0	//(0 << RF_DR_HIGH)
+#define RF24_2MBPS		1	//(1 << RF_DR_HIGH)
+#define RF24_250KBPS	2	//(0 << RF_DR_LOW)
+
+
+void setPALevel(uint8_t level);
+#define min_PA 		0
+#define low_PA 		1
+#define high_PA 	2
+#define max_PA 		3
+
+
+void NRF_CE (uint8_t value);
+void NRF_CSN (uint8_t value);
+
+uint8_t setDataRate(uint8_t speed);
+void MIRF_SET_PowerUp(void);
+uint8_t flush_rx(void);
+uint8_t flush_tx(void);
+void NRF_Init(void);
+void openWritingPipe(uint8_t* address);
+void openReadingPipe(uint8_t pipe, uint8_t* address);
+void startListening(void);
+void stopListening(void);
+void write (uint8_t *data);
+void read(uint8_t* buf, uint8_t len);
+
+uint8_t read_payload(uint8_t* buf, uint8_t data_len);
 
 
 
+#define NRF_CS_OFF() 	GPIOB->BSRR = ( 1 << NRF_CS_pin )	//	поднимаем линию
+#define NRF_CS_ON() 	GPIOB->BRR = ( 1 << NRF_CS_pin )	//	опускаем лини
 
-#define NRF_CS		10	//	B10
-#define NRF_CE		0	//	B0
-
-
-#define NRF_CS_OFF() 	GPIOB->BSRR = ( 1 << NRF_CS )	//	поднимаем линию
-#define NRF_CS_ON() 	GPIOB->BRR = ( 1 << NRF_CS )	//	опускаем лини
-
-#define NRF_CE_SET() 	GPIOB->BSRR = ( 1 << NRF_CE )	//	поднимаем линию
-#define NRF_CE_RESET() 	GPIOB->BRR = ( 1 << NRF_CE )	//	опускаем лини
+#define NRF_CE_SET() 	GPIOB->BSRR = ( 1 << NRF_CE_pin )	//	поднимаем линию
+#define NRF_CE_RESET() 	GPIOB->BRR = ( 1 << NRF_CE_pin )	//	опускаем лини
 
 
 void GPIO_mirf_Init (void);
