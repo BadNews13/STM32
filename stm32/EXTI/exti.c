@@ -31,7 +31,7 @@ void EXTI1_IRQHandler(void)
 {
 	EXTI->PR = EXTI_PR_PR1; //Сбрасываем флаг прерывания
 
-	mirf_int_vect();	//	обработка прерывания nrf24l01
+	NRF_int_vect();	//	обработка прерывания nrf24l01
 
 	static uint8_t trigger = 0;
 

@@ -61,14 +61,14 @@ void SPI1_GPIO_Init (void)
 	offset = pin_SPI1_MISO * 4;							//	6 * 4 = 24
 	GPIOA->CRL &= ~( GPIO_BITS_MASK << offset );		//	стереть 4 бита
 	GPIOA->CRL |= ( INPUT_FLOATING << offset );			//	записать 4 бита
-	//GPIOA->BSRR = ( 1 << pin_SPI1_MISO );				//	установка линии в 1
+	GPIOA->BSRR = ( 1 << pin_SPI1_MISO );				//	установка линии в 1
 	//GPIOA->BRR = ( 1 << pin_SPI1_MISO );				//	установка линии в 0
 
 	// PA7 - MOSI1
 	offset = pin_SPI1_MOSI * 4;							//	7 * 4 = 28
 	GPIOA->CRL &= ~( GPIO_BITS_MASK << offset );		//	стереть 4 бита
 	GPIOA->CRL |= ( AF_PUSH_PULL << offset );			//	записать 4 бита
-	//GPIOA->BSRR = ( 1 << pin_SPI1_MOSI );				//	установка линии в 1
+	GPIOA->BSRR = ( 1 << pin_SPI1_MOSI );				//	установка линии в 1
 	//GPIOA->BRR = ( 1 << pin_SPI1_MOSI );				//	установка линии в 0
 
 
@@ -76,11 +76,9 @@ void SPI1_GPIO_Init (void)
 
 uint8_t SPI1_put_byte (uint8_t tx_byte)
 {
-
 	SPI1->DR = tx_byte;
-	uint8_t rx_byte;
 	while(READ_BIT(SPI1->SR, SPI_SR_BSY));
-	rx_byte = SPI1->DR;
+	uint8_t rx_byte = SPI1->DR;
 	return rx_byte;
 }
 

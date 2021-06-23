@@ -72,6 +72,7 @@
 #define TX_EMPTY    4
 #define RX_FULL     1
 #define RX_EMPTY    0
+#define EN_DPL		2
 #define EN_ACK_PAY	1
 #define EN_DYN_ACK	0
 

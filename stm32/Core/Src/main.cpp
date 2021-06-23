@@ -50,23 +50,6 @@ void init_PP_MODE (void);
 
 
 
-
-//======================================================================================================
-#ifdef MIRF_Master
-//	Для ардуины отправителя
-uint8_t self_adr[3] = {0xB1, 0xB2, 0xB3};		//	адрес этого устройства
-uint8_t remote_adr[3] = {0xC1, 0xC2, 0xC3};		//	адрес удаленного устройства
-	uint8_t master = 1;
-#else
-//	Для ардуины получателя
-uint8_t self_adr[3] = {0xC1, 0xC2, 0xC3};		//	адрес этого устройства
-uint8_t remote_adr[3] = {0xB1, 0xB2, 0xB3};		//	адрес удаленного устройства
-	uint8_t master = 0;
-#endif
-
-
-
-
 int main(void)
 {
 	RCC_DeInit();		//	сбрасываем тактирование
@@ -78,7 +61,7 @@ int main(void)
 //	timerBLINK_ini();	//	запускаем мигание светодиода на отладочной плате
 
 	RTOS_Init();						//	запускает RTOS
-	RTOS_SetTask(led_on, 10000, 0);		// для теста (через ~10 секунд включится светодиод на отладочной плате)
+//	RTOS_SetTask(led_on, 10000, 0);		// для теста (через ~10 секунд включится светодиод на отладочной плате)
 	//RTOS_DeleteTask(led_on);
 
 	//init_PP_MODE();		//	генерация двух противофазных П-образных сигнала на частоте 125kHz
@@ -87,8 +70,7 @@ int main(void)
 	uart2_init(9600);
 	//uart3_init(9600);
 
-
-
+//	SPI1_Init();		//	для общения с чипом нужен SPI
 
 
 	GPIOC->BSRR = GPIO_BSRR_BS13;		//установить нулевой бит
@@ -132,38 +114,50 @@ GPIOB->BSRR = ( 1 << 10 );							//	установка линии в 1 (диод
 */
 
 
-/*
-mirf_init();
-
-mirf_set_rxaddr(1,self_adr);	//	трубу №1 присвоить адрес (наш адрес)
-
-mirf_set_txaddr(remote_adr);	//	задать адрес получателя
-mirf_set_rxaddr(0,remote_adr);	//	если включено ACK, то RX_ADR_P0 должен быть такой же как у удаленного устройства
-
-for (uint8_t i = 0; i<3; i++)	{put_byte_UART2(self_adr[i]);}
 
 
-
-if(master == 1)		{MIRF_SET_TX(); mirf_write(&message[0]);	put_byte_UART2(0xA1);}
-else				{MIRF_SET_RX();								put_byte_UART2(0xA2);}
-*/
-
-uint8_t message[5] = {0x01, 0x02, 0x03, 0x04, 0x05};		//	тестовое сообщение
+uint8_t message[5] = {0x71, 0x02, 0x03, 0x04, 0x05};		//	тестовое сообщение
 NRF_Init();
 
-// Open a writing and reading pipe on each radio, with opposite addresses
-if(master){
-	openWritingPipe(&self_adr[0]);		//  openWritingPipe(addresses[1]);			//	вещать умет только одна труба
-	openReadingPipe(1, &remote_adr[0]);	//  radio.openReadingPipe(1,addresses[0]);	//	слушать можем любую из пяти труб
-}else{
-	openWritingPipe(&remote_adr[0]);		//  radio.openWritingPipe(addresses[0]);
-	openReadingPipe(1, &self_adr[0]);	//  radio.openReadingPipe(1,addresses[1]);
-}
+uint8_t tmp_config = 0;
+tmp_config = NRF_read_reg(CONFIG);					//	получим текущие настройки из чипа
 
-// Start the radio listening for data
-startListening();
 
-uint8_t nrf_buf_tx[5];
+#ifdef MIRF_Master
+//	NRF_SET_TX();				//	переходим в режим передатчика
+//	NRF_write(&message[0]);		//	записываем в буфер отправки сообщение
+
+	SET_BIT		(tmp_config, (1<<PWR_UP));				//	выключим питание антены
+	CLEAR_BIT	(tmp_config, (1<<PRIM_RX));				//	переведем в режим передатчика
+	NRF_write_reg(CONFIG, tmp_config);					//	запишем новые настройки
+	delay_ms(10);
+
+/*
+	//write data
+	NRF_CSN(LOW);		//	низкий уровень на CSN запускает общение с чипом по SPI
+	SPI1_put_byte( W_TX_PAYLOAD );
+	for (uint8_t i = 0; i < mirf_PAYLOAD; i++)   {SPI1_put_byte(message[i]);}
+	NRF_CSN(HIGH);
+
+	//start transmission
+	NRF_CE(HIGH);;
+	delay_us(30);
+	NRF_CE(LOW);
+	*/
+
+#else
+//	NRF_SET_RX();				//	переходим в режим приемника		//	запускаем прослушивание эфира
+
+	SET_BIT		(tmp_config, (1<<PWR_UP));				//	выключим питание антены
+	CLEAR_BIT	(tmp_config, (1<<PRIM_RX));				//	переведем в режим передатчика
+	NRF_write_reg(CONFIG, tmp_config);					//	запишем новые настройки
+	delay_ms(10);
+
+	NRF_CE(HIGH);
+#endif
+
+
+uint8_t once = 0;
 	while(1)
 	{
 		/*
@@ -173,19 +167,37 @@ uint8_t nrf_buf_tx[5];
 		*/
 
 #ifdef MIRF_Master
-		put_byte_UART2(0x0A); put_byte_UART2(0x01);	//	чтобы было видно в консоле, что это мастер (передатчик). И что произола отпрака
-		//mirf_write(&message[0]);
-		stopListening();
-		write(&message[0]);
+//		NRF_write(&message[0]);
+		put_byte_UART2(0x0A);
 
 #else
-		put_byte_UART2(0x0A); put_byte_UART2(0x02);	//	чтобы было видно в консоле, что это подчиненный (приемник).
-//		startListening();
-		read(&nrf_buf_tx[0],5);
-		for (uint8_t i = 0; i < 5; i++)	{put_byte_UART2(nrf_buf_tx[i]);}
+		put_byte_UART2(0x0B);
 #endif
 
+		put_byte_UART2(NRF_read_reg(CONFIG));
+		put_byte_UART2(NRF_read_reg(STATUS));
+		put_byte_UART2(NRF_read_reg(FIFO_STATUS));
+
+//		SPI1_put_byte(0x45);
 		delay_ms(1000);
+
+
+		if (once++ == 5)
+		{
+			// Flush buffers
+			NRF_cmd(FLUSH_RX);
+			NRF_cmd(FLUSH_TX);
+
+			uint8_t tmp_status = NRF_read_reg(STATUS);
+			SET_BIT	(tmp_status, RX_DR);
+			SET_BIT	(tmp_status, TX_DS);
+			SET_BIT	(tmp_status, MAX_RT);
+
+			NRF_write_reg(STATUS, tmp_status);	// сбросим флаги прерывания
+			put_byte_UART2(0xFF);
+			once = 0;
+		}
+
 
 //		USART1->DR = 0xE1;
 //		USART2->DR = 0xE2;
