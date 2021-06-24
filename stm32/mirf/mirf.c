@@ -169,7 +169,7 @@ void NRF_Init(void)
 
 
 //====================================================================================================================================
-
+/*
 	// Настраиваем регистр CONFIG (0x00)
 	uint8_t config_reg_value = NRF_read_reg(CONFIG);	//	переменная для настроек регистра CONFIG
 
@@ -185,54 +185,62 @@ void NRF_Init(void)
 	NRF_write_reg(CONFIG, config_reg_value);	    // Reset NRF_CONFIG and enable 16-bit CRC. (включить 16-и битную контрольную сумму)
 
 	put_byte_UART2(0xF1);	put_byte_UART2(NRF_read_reg(CONFIG));
-
+*/
 
 //====================================================================================================================================
-
+/*
 	// Настраиваем регистр EN_AA (0x01)								//	Включает автоподтверждение приема
 	NRF_write_reg(EN_AA, 0);										//	выключим все автоподтверждения
 	NRF_write_reg(EN_AA, NRF_read_reg(EN_AA) | (1 << ENAA_P0));		//	по нулевому каналу (трубе) будем отправлять подтверждение приема данных
-//	NRF_write_reg(EN_AA, NRF_read_reg(EN_AA) | (1 << ENAA_P1));		// 	если так, то по битам кажется, что отправка проходит успешно (при отсутствии принимающего устройства)
+	NRF_write_reg(EN_AA, NRF_read_reg(EN_AA) | (1 << ENAA_P1));		// 	если так, то по битам кажется, что отправка проходит успешно (при отсутствии принимающего устройства)
+*/
+
+	NRF_write_reg(EN_AA, (1 << ENAA_P1)); 							// включение автоподтверждения только по каналу 1
+//	NRF_write_reg(EN_AA, (1 << ENAA_P0));
 
 	put_byte_UART2(0xF2);	put_byte_UART2(NRF_read_reg(EN_AA));
 
 //====================================================================================================================================
-
+/*
 	// Настраиваем регистр EN_RXADDR (0x02)			//	Выбирает активный канал приемника
 	NRF_write_reg(EN_RXADDR, 0x00);					//	выключим все принимающие каналы
 
-	NRF_write_reg(CONFIG, NRF_read_reg(EN_RXADDR) | (1<<ERX_P1));	// включим прием по 1-у каналу (основные данные)
-	NRF_write_reg(CONFIG, NRF_read_reg(EN_RXADDR) | (1<<ERX_P0));	// включим прием по 1-у каналу (для приема ACK)
+	NRF_write_reg(EN_RXADDR, NRF_read_reg(EN_RXADDR) | (1<<ERX_P1));	// включим прием по 1-у каналу (основные данные)
+	NRF_write_reg(EN_RXADDR, NRF_read_reg(EN_RXADDR) | (1<<ERX_P0));	// включим прием по 1-у каналу (для приема ACK)
+*/
+
+	NRF_write_reg(EN_RXADDR, 0x00);					//	выключим все принимающие каналы
+	NRF_write_reg(EN_RXADDR, (1 << ERX_P0) | (1 << ERX_P1)); 		// включение каналов 0 и 1
+
 
 	put_byte_UART2(0xF3);	put_byte_UART2(NRF_read_reg(EN_RXADDR));
 
 
 //====================================================================================================================================
 
-	// Настраиваем регистр SETUP_AW (0x03)			//	Задаем длину поля адреса
-
-	NRF_write_reg(SETUP_AW, adr_5_bytes);
+	// Настраиваем регистр SETUP_AW (0x03)				//	Задаем длину поля адреса
+	NRF_write_reg(SETUP_AW, SETUP_AW_5BYTES_ADDRESS); 	// выбор длины адреса 5 байт
 
 //====================================================================================================================================
 
 	//	Настраиваем регистр SETUP_RETR (0x04)		//	Настройка параметров автоматического повтора отправки
 
 	uint8_t delay_time = 0;		//	при 0 - время задержки перед повторной отправке 250ms
-	uint8_t retry_cnt = 4;		//	повтор дважды
+	uint8_t retry_cnt = 3;		//	повтор дважды
 
 	NRF_write_reg(SETUP_RETR, delay_time | retry_cnt);
 
 //====================================================================================================================================
 
 	//	Настраиваем регистр RF_CH (0x05)	Задаем номер радиоканала
-	NRF_write_reg(RF_CH, 87+(0x0F*2));	//124 (117)		//transmission channel	//	выбор радиоканала
+	NRF_write_reg(RF_CH, 5);	//124 (117)		//transmission channel	//	выбор радиоканала
 
 //====================================================================================================================================
-
+/*
 	//	Настройка регистра RF_SETUP (0x06)		//	Задаёт настройки радиоканала.
 	uint8_t rf_setup_reg_value = 0;
 
-	CLEAR_BIT	(rf_setup_reg_value, CONT_WAVE);		//	7 bit:	Непрерывная передача несущей (0-выкл)
+	CLEAR_BIT	(rf_setup_reg_value, (1<<CONT_WAVE));		//	7 bit:	Непрерывная передача несущей (0-выкл)
 	//	-//-											//	6 bit:	не используется
 	CLEAR_BIT	(rf_setup_reg_value, (1<<RF_DR_LOW));	//	5 bit:	Включает низкую скорость передачи 250кбит/с. (0-выкл)
 	CLEAR_BIT	(rf_setup_reg_value, (1<<PLL_LOCK));	//	4 bit:	предназначено для тестирования
@@ -241,6 +249,8 @@ void NRF_Init(void)
 	CLEAR_BIT	(rf_setup_reg_value, (1<<(RF_PWR-1)));	//	0 bit:	мощность передатчика
 
 	NRF_write_reg(RF_SETUP, rf_setup_reg_value);
+*/
+	NRF_write_reg(RF_SETUP, RF_SETUP_1MBPS | RF_SETUP_0DBM); 		// выбор скорости 1 Мбит/с и мощности 0dBm
 
 	put_byte_UART2(0xF4);
 	put_byte_UART2(NRF_read_reg(RF_SETUP));
@@ -296,7 +306,7 @@ void NRF_Init(void)
 	// FIFO_STATUS (0x17)						//	Состояние очередей FIFO приёмника и передатчика
 	
 //====================================================================================================================================
-
+/*
 	// Настройка регистра DYNPD (0x1C)			//	Разрешение использования пакетов произвольной длины
 	uint8_t dynpd_reg_value = 0;
 
@@ -310,9 +320,9 @@ void NRF_Init(void)
 	CLEAR_BIT	(dynpd_reg_value, (1<<DPL_P0));		//	0 bit:	запретить прием пакета произвольной длины по данному каналу (трубе)
 
 	NRF_write_reg(DYNPD, dynpd_reg_value);
-
+*/
 //====================================================================================================================================
-
+/*
 	// Настройка регистра FEATURE (0x1D)			//	Регистр опций
 	uint8_t feature_reg_value = 0;
 	
@@ -326,14 +336,16 @@ void NRF_Init(void)
 	CLEAR_BIT	(feature_reg_value, (1<<EN_DYN_ACK));	//	0 bit:	разрешает передавать пакеты, не требующие подтверждения приёма (0-выкл)
 
 	NRF_write_reg(FEATURE, feature_reg_value);
-
+*/
 //====================================================================================================================================
 
 	NRF_write_reg(CONFIG, 0x0E); // Включение питания
 	// Flush buffers
 	NRF_cmd(FLUSH_RX);
 	NRF_cmd(FLUSH_TX);
-	NRF_write_reg(STATUS, NRF_read_reg(STATUS) | (1<<RX_DR)|(1<<TX_DS)|(1<<MAX_RT));	// сбросим флаги прерывания
+
+
+	NRF_write_reg(STATUS, (1<<RX_DR)|(1<<TX_DS)|(1<<MAX_RT));	// сбросим флаги прерывания
 
 
 	/*
@@ -477,12 +489,12 @@ void NRF_INIT_TEST(void)
 	NRF_CSN(HIGH);					//	поднимаем линию (общение окончено) //	активный уровень - низкий (после того как пообщались - переводим в высокий) (при инициалисзации обязательно к +)
 
 
-	NRF_write_reg(EN_AA, (1 << ENAA_P1)); 							// включение автоподтверждения только по каналу 1
-	NRF_write_reg(EN_RXADDR, (1 << ERX_P0) | (1 << ERX_P1)); 		// включение каналов 0 и 1
-	NRF_write_reg(SETUP_AW, SETUP_AW_5BYTES_ADDRESS); 				// выбор длины адреса 5 байт
+	NRF_write_reg(EN_AA, 							(1 << ENAA_P1)); 	// включение автоподтверждения только по каналу 1
+	NRF_write_reg(EN_RXADDR, 	(1 << ERX_P0) | 	(1 << ERX_P1)); 	// включение каналов 0 и 1
+	NRF_write_reg(SETUP_AW, SETUP_AW_5BYTES_ADDRESS); 					// выбор длины адреса 5 байт
 	NRF_write_reg(SETUP_RETR, SETUP_RETR_DELAY_250MKS | SETUP_RETR_UP_TO_3_RETRANSMIT);
-	NRF_write_reg(RF_CH, chan); 									// Выбор частотного канала
-	NRF_write_reg(RF_SETUP, RF_SETUP_1MBPS | RF_SETUP_0DBM); 		// выбор скорости 1 Мбит/с и мощности 0dBm
+	NRF_write_reg(RF_CH, chan); 										// Выбор частотного канала
+	NRF_write_reg(RF_SETUP, RF_SETUP_1MBPS | RF_SETUP_0DBM); 			// выбор скорости 1 Мбит/с и мощности 0dBm
 
 	NRF_write_buf(RX_ADDR_P0, &remote_adr[0], 5); // Подтверждения приходят на канал 0
 	NRF_write_buf(TX_ADDR, &remote_adr[0], 5);

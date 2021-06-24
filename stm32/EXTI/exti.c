@@ -10,8 +10,12 @@ void EXTI_Init (void)
 	  uint8_t pin_B1 = 1;
 
 	  uint8_t offset = pin_B1 * 4;							//	2 * 4 = 8
-	  GPIOB->CRL &= ~( GPIO_BITS_MASK << offset );		//	стереть 4 бита // (0xF << 20) - (bit_23, bit_22, bit_21, bit_20)
-	  GPIOB->CRL |= ( 0x02 << offset );		//	записать 4 бита
+
+	  GPIOB->CRL &= ~( GPIO_BITS_MASK << offset );		//	стереть 4 бита
+	  GPIOB->CRL |= ( INPUT_PULL_UP_DOWN << offset );	//	записать 4 бита
+//	  GPIOB->CRL |= ( INPUT_FLOATING << offset );		//	записать 4 бита
+
+
 	  GPIOB->BSRR = ( 1 << pin_B1 );							//	установка линии в 1 (диод не светится)
 	  //GPIOB->BRR = ( 1 << pin_B1 );						//	установка линии TX2 в 0 (диод светится)
 
@@ -32,11 +36,8 @@ void EXTI1_IRQHandler(void)
 	put_byte_UART2(0x55);
 	EXTI->PR = EXTI_PR_PR1; //Сбрасываем флаг прерывания
 
-	NRF_int_vect();	//	обработка прерывания nrf24l01
+//	NRF_int_vect();	//	обработка прерывания nrf24l01
 
-	GPIOC->BRR = ( 1 << 13 );
-
-	return;
 	static uint8_t trigger = 0;
 
 	if (trigger)	{GPIOC->BSRR = ( 1 << 13 ); trigger = 0;}		// установка линии в 1

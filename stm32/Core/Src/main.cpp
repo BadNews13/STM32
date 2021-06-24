@@ -85,15 +85,17 @@ int main(void)
 
 uint8_t message[5] = {0x71, 0x02, 0x03, 0x04, 0x05};		//	тестовое сообщение
 
-//NRF_Init();
-NRF_INIT_TEST();
+NRF_Init();
+//NRF_INIT_TEST();
 
 #ifdef MIRF_Master
 	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) | (1<<PWR_UP));			delay_ms(2);
 	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) & ~(1<<PRIM_RX));		delay_ms(2);
+	NRF_CE(LOW);
 #else
 	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) | (1<<PWR_UP));			delay_ms(2);
 	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) | (1<<PRIM_RX));			delay_ms(2);
+	NRF_CE(LOW);
 #endif
 
 
@@ -107,20 +109,11 @@ NRF_INIT_TEST();
 		{
 			put_byte_UART2(0xFF);	once = 0;	delay_ms(100);
 
-		//	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) & ~ (1<<PWR_UP));		//	выкл питание антенны
-
 			NRF_CE(HIGH);
 			NRF_cmd(FLUSH_TX);	//	работает только в режиме передачи (поэтому NRF_CE)
 			NRF_CE(LOW);
 
-			uint8_t tmp_status = NRF_read_reg(STATUS);
-			SET_BIT	(tmp_status, (1<<RX_DR));
-			SET_BIT	(tmp_status, (1<<TX_DS));
-			SET_BIT	(tmp_status, (1<<MAX_RT));
-			NRF_write_reg(STATUS, tmp_status);	// сбросим флаги прерывания
-
-			//NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) | (1<<PWR_UP));		delay_ms(2);
-
+			NRF_write_reg(STATUS, (1<<RX_DR)|(1<<TX_DS)|(1<<MAX_RT));	// сбросим флаги прерывания
 
 			#ifdef MIRF_Master
 					put_byte_UART2(0x0A);
@@ -132,18 +125,7 @@ NRF_INIT_TEST();
 		else
 		{
 			#ifdef MIRF_Master
-
 					if (NRF_read_reg(FIFO_STATUS) & (1<<TX_EMPTY))			{NRF_write(&message[0]);}
-					else
-					{
-						/*
-						NRF_CE(HIGH);
-						NRF_cmd(FLUSH_TX);
-						NRF_CE(LOW);
-						*/
-					}
-
-
 					put_byte_UART2(0x0A);
 			#else
 					put_byte_UART2(0x0B);
