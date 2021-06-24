@@ -57,6 +57,8 @@ void NRF_write (uint8_t *data);
 #endif
 
 
+void NRF_INIT_TEST(void);
+
 
 #endif /* _MIRF_H_ */
 

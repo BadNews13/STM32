@@ -62,7 +62,7 @@ int main(void)
 
 	RTOS_Init();						//	запускает RTOS
 //	RTOS_SetTask(led_on, 10000, 0);		// для теста (через ~10 секунд включится светодиод на отладочной плате)
-	//RTOS_DeleteTask(led_on);
+//	RTOS_DeleteTask(led_on);
 
 	//init_PP_MODE();		//	генерация двух противофазных П-образных сигнала на частоте 125kHz
 
@@ -72,147 +72,87 @@ int main(void)
 
 //	SPI1_Init();		//	для общения с чипом нужен SPI
 
-
-	GPIOC->BSRR = GPIO_BSRR_BS13;		//установить нулевой бит
-
-// Пример настройки светодиода на отладочной плате
-GPIO *port_C = new GPIO(GPIOC); 				//	создаем экземпляр класса, передаем порт GPIOC
-port_C->pinConf(13, OUTPUT_PUSH_PULL); 		//	задаем режим выход пуш-пул	OUTPUT_PUSH_PULL
-port_C->setPin(13); 							//	установка вывода в 1
-//port_C->resetPin(13); 						//	сброс вывода
-/*
-int value;
-value = port->getPin (13); // считываем состояние вывода
-*/
-
-
-/*
-//	чтобы видеть жива ли плата controller_v1 (это пин TX1 (PA9))
-//	тактирование шины A уже включено
-uint8_t offset = ( 9 - 8 ) * 4;						//	(9-8) * 4 = 4
-GPIOA->CRH &= ~( GPIO_BITS_MASK << offset );		//	стереть 4 бита // (0xF << 20) - (bit_23, bit_22, bit_21, bit_20)
-GPIOA->CRH |= ( OUTPUT_PUSH_PULL << offset );		//	записать 4 бита
-*/
-
-/*
-//	чтоБы видеть жива ли плата controller_v1 (это пин TX2 (PA2))
-//	тактирование шины A уже включено
-uint8_t offset = 2 * 4;								//	2 * 4 = 8
-GPIOA->CRL &= ~( GPIO_BITS_MASK << offset );		//	стереть 4 бита // (0xF << 20) - (bit_23, bit_22, bit_21, bit_20)
-GPIOA->CRL |= ( OUTPUT_PUSH_PULL << offset );		//	записать 4 бита
-GPIOA->BSRR = ( 1 << 2 );							//	установка линии в 1 (диод не светится)
-//GPIOA->BRR = ( 1 << 2 );							//	установка линии TX2 в 0 (диод светится)
-*/
-//	чтоБы видеть жива ли плата controller_v1 (это пин TX3 (PB10))
-/*
-RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;
-uint8_t offset = ( 10 - 8 ) * 4;							//	(10-8) * 4 = 28
-GPIOB->CRH &= ~( GPIO_BITS_MASK << offset );		//	стереть 4 бита // (0xF << 20) - (bit_23, bit_22, bit_21, bit_20)
-GPIOB->CRH |= ( OUTPUT_PUSH_PULL << offset );		//	записать 4 бита
-GPIOB->BSRR = ( 1 << 10 );							//	установка линии в 1 (диод не светится)
-//GPIOB->BRR = ( 1 << 10 );							//	установка линии TX3 в 0 (диод светится)
-*/
-
-
-
+//======= LED PC13 =========================================================================
+	RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
+	uint8_t offset;
+	uint8_t LED_pin = 13;
+	offset = (LED_pin - 8) * 4;						//	0 * 4 = 16
+	GPIOC->CRH &= ~( GPIO_BITS_MASK << offset );	//	стереть 4 бита
+	GPIOC->CRH |= ( OUTPUT_PUSH_PULL << offset );	//	записать 4 бита
+	GPIOC->BSRR = ( 1 << LED_pin );				//	установка линии в 1
+	//GPIOC->BRR = ( 1 << LED_pin );				//	установка линии в 0
+//==========================================================================================
 
 uint8_t message[5] = {0x71, 0x02, 0x03, 0x04, 0x05};		//	тестовое сообщение
-NRF_Init();
 
-uint8_t tmp_config = 0;
-tmp_config = NRF_read_reg(CONFIG);					//	получим текущие настройки из чипа
-
+//NRF_Init();
+NRF_INIT_TEST();
 
 #ifdef MIRF_Master
-//	NRF_SET_TX();				//	переходим в режим передатчика
-//	NRF_write(&message[0]);		//	записываем в буфер отправки сообщение
-
-	SET_BIT		(tmp_config, (1<<PWR_UP));				//	выключим питание антены
-	CLEAR_BIT	(tmp_config, (1<<PRIM_RX));				//	переведем в режим передатчика
-	NRF_write_reg(CONFIG, tmp_config);					//	запишем новые настройки
-	delay_ms(10);
-
-/*
-	//write data
-	NRF_CSN(LOW);		//	низкий уровень на CSN запускает общение с чипом по SPI
-	SPI1_put_byte( W_TX_PAYLOAD );
-	for (uint8_t i = 0; i < mirf_PAYLOAD; i++)   {SPI1_put_byte(message[i]);}
-	NRF_CSN(HIGH);
-
-	//start transmission
-	NRF_CE(HIGH);;
-	delay_us(30);
-	NRF_CE(LOW);
-	*/
-
+	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) | (1<<PWR_UP));			delay_ms(2);
+	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) & ~(1<<PRIM_RX));		delay_ms(2);
 #else
-//	NRF_SET_RX();				//	переходим в режим приемника		//	запускаем прослушивание эфира
-
-	SET_BIT		(tmp_config, (1<<PWR_UP));				//	выключим питание антены
-	CLEAR_BIT	(tmp_config, (1<<PRIM_RX));				//	переведем в режим передатчика
-	NRF_write_reg(CONFIG, tmp_config);					//	запишем новые настройки
-	delay_ms(10);
-
-	NRF_CE(HIGH);
+	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) | (1<<PWR_UP));			delay_ms(2);
+	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) | (1<<PRIM_RX));			delay_ms(2);
 #endif
 
 
-uint8_t once = 0;
+
 	while(1)
 	{
-		/*
-		put_byte_UART2(NRF_read_reg(0xFF));	//	получаем статус
-		for(uint8_t i = 0; i<10; i++)	{}
-		put_byte_UART2(NRF_read_reg(CONFIG));
-		*/
+		delay_ms(1000);
 
-#ifdef MIRF_Master
-//		NRF_write(&message[0]);
-		put_byte_UART2(0x0A);
+		static uint8_t once = 0;
+		if (once++ == 5)
+		{
+			put_byte_UART2(0xFF);	once = 0;	delay_ms(100);
 
-#else
-		put_byte_UART2(0x0B);
-#endif
+		//	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) & ~ (1<<PWR_UP));		//	выкл питание антенны
+
+			NRF_CE(HIGH);
+			NRF_cmd(FLUSH_TX);	//	работает только в режиме передачи (поэтому NRF_CE)
+			NRF_CE(LOW);
+
+			uint8_t tmp_status = NRF_read_reg(STATUS);
+			SET_BIT	(tmp_status, (1<<RX_DR));
+			SET_BIT	(tmp_status, (1<<TX_DS));
+			SET_BIT	(tmp_status, (1<<MAX_RT));
+			NRF_write_reg(STATUS, tmp_status);	// сбросим флаги прерывания
+
+			//NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) | (1<<PWR_UP));		delay_ms(2);
+
+
+			#ifdef MIRF_Master
+					put_byte_UART2(0x0A);
+			#else
+					put_byte_UART2(0x0B);
+			#endif
+
+		}
+		else
+		{
+			#ifdef MIRF_Master
+
+					if (NRF_read_reg(FIFO_STATUS) & (1<<TX_EMPTY))			{NRF_write(&message[0]);}
+					else
+					{
+						/*
+						NRF_CE(HIGH);
+						NRF_cmd(FLUSH_TX);
+						NRF_CE(LOW);
+						*/
+					}
+
+
+					put_byte_UART2(0x0A);
+			#else
+					put_byte_UART2(0x0B);
+			#endif
+		}
 
 		put_byte_UART2(NRF_read_reg(CONFIG));
 		put_byte_UART2(NRF_read_reg(STATUS));
 		put_byte_UART2(NRF_read_reg(FIFO_STATUS));
-
-//		SPI1_put_byte(0x45);
-		delay_ms(1000);
-
-
-		if (once++ == 5)
-		{
-			// Flush buffers
-			NRF_cmd(FLUSH_RX);
-			NRF_cmd(FLUSH_TX);
-
-			uint8_t tmp_status = NRF_read_reg(STATUS);
-			SET_BIT	(tmp_status, RX_DR);
-			SET_BIT	(tmp_status, TX_DS);
-			SET_BIT	(tmp_status, MAX_RT);
-
-			NRF_write_reg(STATUS, tmp_status);	// сбросим флаги прерывания
-			put_byte_UART2(0xFF);
-			once = 0;
-		}
-
-
-//		USART1->DR = 0xE1;
-//		USART2->DR = 0xE2;
-
-/*
- 	 	//	пример работы с дисплеем (вывод полученных по uart данных)
-		LCD_Command(0x01);		//	очистка дисплея					(LCD_CLEAR)
-		delay_ms(2);			//	долгая операция
-		LCD_Command(LCD_SETDDRAMADDR | 0);	//	писать с нулевого адреса
-		LCDsendString(&uart1_rx_buf[0]);
-
-		LCD_Command(LCD_SETDDRAMADDR | SECONDSTRING | 0);	//	писать с нулевого адреса
-		LCDsendString(&uart3_rx_buf[0]);
-*/
-
 	}
 }
 

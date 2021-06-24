@@ -17,7 +17,7 @@ void EXTI_Init (void)
 
 	  AFIO->EXTICR[0] |= AFIO_EXTICR1_EXTI1_PB;			//	Первый канал EXTI подключен к порту PB1
 
-//	  EXTI->RTSR |= EXTI_RTSR_TR1; 						//	Прерывание по нарастанию импульса для канала 1
+	  EXTI->RTSR |= EXTI_RTSR_TR1; 						//	Прерывание по нарастанию импульса для канала 1
 	  EXTI->FTSR |= EXTI_FTSR_TR1;						//	Прерывание по спаду импульса для канала 1
 
 	  EXTI->PR = EXTI_PR_PR1;      //Сбрасываем флаг прерывания, перед включением самого прерывания
@@ -29,10 +29,14 @@ void EXTI_Init (void)
 
 void EXTI1_IRQHandler(void)
 {
+	put_byte_UART2(0x55);
 	EXTI->PR = EXTI_PR_PR1; //Сбрасываем флаг прерывания
 
 	NRF_int_vect();	//	обработка прерывания nrf24l01
 
+	GPIOC->BRR = ( 1 << 13 );
+
+	return;
 	static uint8_t trigger = 0;
 
 	if (trigger)	{GPIOC->BSRR = ( 1 << 13 ); trigger = 0;}		// установка линии в 1
