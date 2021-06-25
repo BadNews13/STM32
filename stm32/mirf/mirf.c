@@ -315,8 +315,8 @@ void NRF_Init(void)
 	CLEAR_BIT	(dynpd_reg_value, (1<<DPL_P4));		//	4 bit:	запретить прием пакета произвольной длины по данному каналу (трубе)
 	CLEAR_BIT	(dynpd_reg_value, (1<<DPL_P3));		//	3 bit:	запретить прием пакета произвольной длины по данному каналу (трубе)
 	CLEAR_BIT	(dynpd_reg_value, (1<<DPL_P2));		//	2 bit:	запретить прием пакета произвольной длины по данному каналу (трубе)
-	CLEAR_BIT	(dynpd_reg_value, (1<<DPL_P1));		//	1 bit:	запретить прием пакета произвольной длины по данному каналу (трубе)
-	CLEAR_BIT	(dynpd_reg_value, (1<<DPL_P0));		//	0 bit:	запретить прием пакета произвольной длины по данному каналу (трубе)
+	SET_BIT		(dynpd_reg_value, (1<<DPL_P1));		//	1 bit:	запретить прием пакета произвольной длины по данному каналу (трубе)
+	SET_BIT		(dynpd_reg_value, (1<<DPL_P0));		//	0 bit:	запретить прием пакета произвольной длины по данному каналу (трубе)
 
 	NRF_write_reg(DYNPD, dynpd_reg_value);
 
@@ -499,4 +499,10 @@ void NRF_INIT_TEST(void)
 
 //	NRF_write_reg(CONFIG, (1 << EN_CRC) | (1 << CRCO) | (1 << PWR_UP) | (1 << PRIM_RX)); // Включение питания
 	NRF_write_reg(CONFIG, 0x0E); // Включение питания
+
+	// Flush buffers
+	NRF_cmd(FLUSH_RX);
+	NRF_cmd(FLUSH_TX);
+
+	NRF_write_reg(STATUS, NRF_read_reg(STATUS));	// сбросим флаги прерывания
 }
