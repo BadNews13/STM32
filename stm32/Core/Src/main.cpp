@@ -85,57 +85,66 @@ int main(void)
 
 uint8_t message[5] = {0x71, 0x02, 0x03, 0x04, 0x05};		//	тестовое сообщение
 
-NRF_Init();
-//NRF_INIT_TEST();
+//NRF_Init();
+NRF_INIT_TEST();
 
 #ifdef MIRF_Master
-	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) | (1<<PWR_UP));			delay_ms(2);
-	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) & ~(1<<PRIM_RX));		delay_ms(2);
-	NRF_CE(LOW);
+	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) | (1<<PWR_UP));			delay_ms(2);	//	переходим в Standby-I
+	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) & ~(1<<PRIM_RX));		delay_ms(2);	//	переходим в Standby-2	(из-за CE(LOW))
+	NRF_CE(HIGH);																		//	переходим в TX Mode
+
 #else
-	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) | (1<<PWR_UP));			delay_ms(2);
-	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) | (1<<PRIM_RX));			delay_ms(2);
-	NRF_CE(LOW);
+	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) | (1<<PWR_UP));			delay_ms(2);	//	переходим в Standby-I
+	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) | (1<<PRIM_RX));			delay_ms(2);	//	переходим в RX Mode
+	NRF_CE(HIGH);
 #endif
 
 
+
+	uint8_t Stage = 0;
 
 	while(1)
 	{
 		delay_ms(1000);
 
-		static uint8_t once = 0;
-		if (once++ == 5)
+		switch (Stage)
 		{
-			put_byte_UART2(0xFF);	once = 0;	delay_ms(100);
+			case 0:
+			{
+				put_byte_UART2(Stage); Stage = 1;
+				NRF_cmd(FLUSH_TX);											//	чистим TX буфер
+				NRF_cmd(FLUSH_RX);											//	чистим RX буфер
+				NRF_write_reg(STATUS, (1<<RX_DR)|(1<<TX_DS)|(1<<MAX_RT));	//	сбросим флаги прерывания
 
-			NRF_CE(HIGH);
-			NRF_cmd(FLUSH_TX);	//	работает только в режиме передачи (поэтому NRF_CE)
-			NRF_CE(LOW);
+			}
+			break;
 
-			NRF_write_reg(STATUS, (1<<RX_DR)|(1<<TX_DS)|(1<<MAX_RT));	// сбросим флаги прерывания
+			case 5:		{put_byte_UART2(Stage); Stage = 0;}	break;								//	переходим в стадию сброса флагов и чистке буферов
 
-			#ifdef MIRF_Master
-					put_byte_UART2(0x0A);
-			#else
-					put_byte_UART2(0x0B);
-			#endif
+			default:
+			{
+				put_byte_UART2(Stage); Stage++;
+				#ifdef MIRF_Master
+					NRF_write(&message[0]);										//	отправляем пробный пакет
+				#else
+				#endif
 
-		}
-		else
-		{
-			#ifdef MIRF_Master
-					if (NRF_read_reg(FIFO_STATUS) & (1<<TX_EMPTY))			{NRF_write(&message[0]);}
-					put_byte_UART2(0x0A);
-			#else
-					put_byte_UART2(0x0B);
-			#endif
+			}
+			break;
 		}
 
+
+#ifdef MIRF_Master
+		put_byte_UART2(0x0A);
+#else
+		put_byte_UART2(0x0B);
+#endif
 		put_byte_UART2(NRF_read_reg(CONFIG));
 		put_byte_UART2(NRF_read_reg(STATUS));
 		put_byte_UART2(NRF_read_reg(FIFO_STATUS));
+
 	}
+
 }
 
 

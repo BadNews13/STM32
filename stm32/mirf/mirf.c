@@ -28,8 +28,8 @@ void NRF_CSN (uint8_t value)
 {
 	switch (value)
 	{
-		case HIGH:	{ GPIOB->BSRR = ( 1 << NRF_CS_pin ); }	break;	//	поднимаем линию
-		case LOW:	{ GPIOB->BRR = ( 1 << NRF_CS_pin );	}	break;	//	опускаем лини
+		case HIGH:	{delay_us(1); 	GPIOB->BSRR = ( 1 << NRF_CS_pin ); 				}	break;	//	поднимаем линию
+		case LOW:	{ 				GPIOB->BRR = ( 1 << NRF_CS_pin );	delay_us(1);}	break;	//	опускаем лини
 	}
 }
 
@@ -102,7 +102,8 @@ void NRF_SET_PowerUp(void)
 void NRF_cmd(uint8_t cmd)
 {
 	NRF_CSN(LOW);
-	SPI1_put_byte(W_REGISTER | (REGISTER_MASK & cmd));
+//	SPI1_put_byte(W_REGISTER | (REGISTER_MASK & cmd));
+	SPI1_put_byte(cmd);
 	NRF_CSN(HIGH);
 }
 
@@ -236,7 +237,7 @@ void NRF_Init(void)
 	NRF_write_reg(RF_CH, 5);	//124 (117)		//transmission channel	//	выбор радиоканала
 
 //====================================================================================================================================
-/*
+
 	//	Настройка регистра RF_SETUP (0x06)		//	Задаёт настройки радиоканала.
 	uint8_t rf_setup_reg_value = 0;
 
@@ -249,8 +250,6 @@ void NRF_Init(void)
 	CLEAR_BIT	(rf_setup_reg_value, (1<<(RF_PWR-1)));	//	0 bit:	мощность передатчика
 
 	NRF_write_reg(RF_SETUP, rf_setup_reg_value);
-*/
-	NRF_write_reg(RF_SETUP, RF_SETUP_1MBPS | RF_SETUP_0DBM); 		// выбор скорости 1 Мбит/с и мощности 0dBm
 
 	put_byte_UART2(0xF4);
 	put_byte_UART2(NRF_read_reg(RF_SETUP));
@@ -294,7 +293,7 @@ void NRF_Init(void)
 //====================================================================================================================================
 
 	//	RX_PW_P0 - RX_PW_P5 (0x11-0x16)			//	8-битные регистры, задающие размер данных
-	NRF_write_reg(RX_PW_P0, 0);				//length of incoming payload
+	NRF_write_reg(RX_PW_P0, 0);					//length of incoming payload
 	NRF_write_reg(RX_PW_P1, mirf_PAYLOAD);
 //	NRF_write_reg(RX_PW_P2, mirf_PAYLOAD);
 //	NRF_write_reg(RX_PW_P3, mirf_PAYLOAD);
@@ -306,7 +305,7 @@ void NRF_Init(void)
 	// FIFO_STATUS (0x17)						//	Состояние очередей FIFO приёмника и передатчика
 	
 //====================================================================================================================================
-/*
+
 	// Настройка регистра DYNPD (0x1C)			//	Разрешение использования пакетов произвольной длины
 	uint8_t dynpd_reg_value = 0;
 
@@ -320,9 +319,9 @@ void NRF_Init(void)
 	CLEAR_BIT	(dynpd_reg_value, (1<<DPL_P0));		//	0 bit:	запретить прием пакета произвольной длины по данному каналу (трубе)
 
 	NRF_write_reg(DYNPD, dynpd_reg_value);
-*/
+
 //====================================================================================================================================
-/*
+
 	// Настройка регистра FEATURE (0x1D)			//	Регистр опций
 	uint8_t feature_reg_value = 0;
 	
@@ -331,12 +330,12 @@ void NRF_Init(void)
 	//	-//-											//	5 bit:	не используется
 	//	-//-											//	4 bit:	не используется
 	//	-//-											//	3 bit:	не используется
-	CLEAR_BIT	(feature_reg_value, (1<<EN_DPL));		//	2 bit:	поддержка приёма и передачи пакетов с размером поля данных произвольной длины (0-выкл)
+	SET_BIT		(feature_reg_value, (1<<EN_DPL));		//	2 bit:	поддержка приёма и передачи пакетов с размером поля данных произвольной длины (0-выкл)
 	CLEAR_BIT	(feature_reg_value, (1<<EN_ACK_PAY));	//	1 bit:	поддержка передачи данных с пакетами подтверждения (0-выкл)
 	CLEAR_BIT	(feature_reg_value, (1<<EN_DYN_ACK));	//	0 bit:	разрешает передавать пакеты, не требующие подтверждения приёма (0-выкл)
 
 	NRF_write_reg(FEATURE, feature_reg_value);
-*/
+
 //====================================================================================================================================
 
 	NRF_write_reg(CONFIG, 0x0E); // Включение питания
@@ -344,36 +343,36 @@ void NRF_Init(void)
 	NRF_cmd(FLUSH_RX);
 	NRF_cmd(FLUSH_TX);
 
+	NRF_write_reg(STATUS, NRF_read_reg(STATUS));	// сбросим флаги прерывания
 
-	NRF_write_reg(STATUS, (1<<RX_DR)|(1<<TX_DS)|(1<<MAX_RT));	// сбросим флаги прерывания
-
-
-	/*
-	uint8_t tmp = NRF_read_reg(STATUS);
-	SET_BIT		(tmp, (1<<RX_DR));
-	SET_BIT		(tmp, (1<<TX_DS));
-	SET_BIT		(tmp, (1<<MAX_RT));
-	NRF_write_reg(STATUS, tmp);
-	 */
 }
 
 
 void NRF_int_vect (void)
 {
 	put_byte_UART2(0xAB);
+
 	uint8_t status_mirf;
 	status_mirf = NRF_read_reg(STATUS);					//	запрашиваем статус nRF24L01
 
-	if(READ_BIT(status_mirf,RX_DR))					//	если поднят флаг "получены данные"
+
+//	put_byte_UART2(NRF_read_reg(STATUS));
+//	put_byte_UART2(NRF_read_reg(CONFIG));
+
+
+
+	if(READ_BIT(status_mirf, (1<<RX_DR)))					//	если поднят флаг "получены данные"
 	{
 		NRF_read_buf(R_RX_PAYLOAD, &in_data_to_mirf_for_test[0], mirf_PAYLOAD);		//	считываем
-		for (uint8_t i=0; i<mirf_PAYLOAD; i++)	{put_byte_UART2(in_data_to_mirf_for_test[i]);}		//	выведем в uart что получили
+		for (uint8_t i=0; i<5; i++)	{put_byte_UART2(in_data_to_mirf_for_test[i]);}		//	выведем в uart что получили
 	}
-/*
+
+
 NRF_cmd(FLUSH_RX);
 NRF_cmd(FLUSH_TX);
+
 NRF_write_reg(STATUS, (1<<RX_DR)|(1<<TX_DS)|(1<<MAX_RT));	// сбросим флаги прерывания
-*/
+
 
 	/*
 	uint8_t status_mirf;
@@ -444,18 +443,11 @@ void GPIO_NRF_Init (void)
 //Similar to the previous write, clears the interrupt flags
 void NRF_write (uint8_t *data)
 {
-//	NRF_CE(LOW);		//	плюс запустит отправку. Поэтому прижмем на всякий случай
-
 	//write data
 	NRF_CSN(LOW);		//	низкий уровень на CSN запускает общение с чипом по SPI
 	SPI1_put_byte( W_TX_PAYLOAD );
 	for (uint8_t i = 0; i < mirf_PAYLOAD; i++)   {SPI1_put_byte(data[i]);}
 	NRF_CSN(HIGH);
-
-
-//	uint8_t status_reg = NRF_read_reg(STATUS);
-//	NRF_write_reg(STATUS, (1 << RX_DR) | (1 << TX_DS) | (1 << MAX_RT));
-
 
 	//start transmission
 	NRF_CE(HIGH);;
@@ -502,8 +494,9 @@ void NRF_INIT_TEST(void)
 
 	NRF_write_reg(RX_PW_P0, 0);
 	NRF_write_reg(RX_PW_P1, 32);
-//	NRF_write_reg(DYNPD, (1 << DPL_P0) | (1 << DPL_P1)); // включение произвольной длины для каналов 0 и 1
-//	NRF_write_reg(FEATURE, 0x04); // разрешение произвольной длины пакета данных
+	NRF_write_reg(DYNPD, (1 << DPL_P0) | (1 << DPL_P1)); // включение произвольной длины для каналов 0 и 1
+	NRF_write_reg(FEATURE, 0x04); // разрешение произвольной длины пакета данных
+
 //	NRF_write_reg(CONFIG, (1 << EN_CRC) | (1 << CRCO) | (1 << PWR_UP) | (1 << PRIM_RX)); // Включение питания
 	NRF_write_reg(CONFIG, 0x0E); // Включение питания
 }
