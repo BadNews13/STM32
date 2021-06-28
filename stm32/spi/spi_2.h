@@ -23,6 +23,8 @@ void SPI2_Init (void);
 void SPI2_GPIO_Init (void);
 uint8_t SPI2_put_byte (uint8_t tx_byte);
 
+void SPI2_Init_old (void);
+
 
 //========== Для инициализации GPIO ======================================================
 //---------------inputs-------------------------------------------------

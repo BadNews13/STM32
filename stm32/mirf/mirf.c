@@ -29,8 +29,8 @@ void NRF_CSN (uint8_t value)
 {
 	switch (value)
 	{
-		case HIGH:	{/*delay_us(1); */	GPIOB->BSRR = ( 1 << NRF_CS_pin ); 				}	break;	//	поднимаем линию
-		case LOW:	{ 				GPIOB->BRR = ( 1 << NRF_CS_pin );	/*delay_us(1);*/}	break;	//	опускаем лини
+		case HIGH:	{delay_us(1); 	GPIOB->BSRR = ( 1 << NRF_CS_pin ); 				}	break;	//	поднимаем линию
+		case LOW:	{ 				GPIOB->BRR = ( 1 << NRF_CS_pin );	delay_us(1);}	break;	//	опускаем лини
 	}
 }
 
