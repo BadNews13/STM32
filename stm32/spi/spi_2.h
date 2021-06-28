@@ -1,14 +1,28 @@
 /*
- * exti.h
+ * spi_2.h
  *
- *  Created on: 17 июн. 2021 г.
+ *  Created on: Jun 25, 2021
  *      Author: bad_n
  */
 
-#ifndef EXTI_EXTI_H_
-#define EXTI_EXTI_H_
+#ifndef SPI_2_H_
+#define SPI_2_H_
+
 
 #include "stm32f10x.h"
+
+
+#define pin_SPI2_SCK	13 	//	(PB13)
+#define pin_SPI2_MISO	14	//	(PB14)
+#define pin_SPI2_MOSI	15	//	(PB15)
+
+#define SPI2_ENABLE() 	SET_BIT		(SPI2->CR1, SPI_CR1_SPE)
+
+
+void SPI2_Init (void);
+void SPI2_GPIO_Init (void);
+uint8_t SPI2_put_byte (uint8_t tx_byte);
+
 
 //========== Для инициализации GPIO ======================================================
 //---------------inputs-------------------------------------------------
@@ -30,12 +44,5 @@
 //========================================================================================
 
 
-void EXTI_Init (void);		//	для контроллера (IRQ->PA8)
-void EXTI_Init_B1 (void);	//	для отладоной платы
 
-
-
-
-
-
-#endif /* EXTI_EXTI_H_ */
+#endif /* SPI_2_H_ */

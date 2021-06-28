@@ -24,6 +24,7 @@ extern "C" {
 	#include <exti.h>
 	#include <mirf.h>
 	#include <spi_1.h>
+	#include <spi_2.h>
 	#include <uart_1.h>
 	#include <uart_2.h>
 	#include <uart_3.h>
@@ -83,10 +84,23 @@ int main(void)
 	//GPIOC->BRR = ( 1 << LED_pin );				//	установка линии в 0
 //==========================================================================================
 
+
+
+/*
+	//	чтоБы видеть жива ли плата controller_v1 (это пин TX2 (PA2))
+	//	тактирование шины A уже включено
+	uint8_t offset = 2 * 4;								//	2 * 4 = 8
+	GPIOA->CRL &= ~( GPIO_BITS_MASK << offset );		//	стереть 4 бита // (0xF << 20) - (bit_23, bit_22, bit_21, bit_20)
+	GPIOA->CRL |= ( OUTPUT_PUSH_PULL << offset );		//	записать 4 бита
+	GPIOA->BSRR = ( 1 << 2 );							//	установка линии в 1 (диод не светится)
+	//GPIOA->BRR = ( 1 << 2 );							//	установка линии TX2 в 0 (диод светится)
+*/
+
+
+
 uint8_t message[5] = {0x71, 0x02, 0x03, 0x04, 0x05};		//	тестовое сообщение
 
-//NRF_Init();
-NRF_INIT_TEST();
+NRF_Init();
 
 #ifdef MIRF_Master
 	NRF_write_reg(CONFIG, NRF_read_reg(CONFIG) | (1<<PWR_UP));			delay_ms(2);	//	переходим в Standby-I
@@ -105,8 +119,14 @@ NRF_INIT_TEST();
 
 	while(1)
 	{
+		/*
+		GPIOA->BSRR = ( 1 << 2 );							//	установка линии в 1 (диод не светится)
 		delay_ms(1000);
+		GPIOA->BRR = ( 1 << 2 );							//	установка линии TX2 в 0 (диод светится)
+		delay_ms(1000);
+		 */
 
+		delay_ms(1000);
 		switch (Stage)
 		{
 			case 0:
@@ -115,20 +135,18 @@ NRF_INIT_TEST();
 				NRF_cmd(FLUSH_TX);											//	чистим TX буфер
 				NRF_cmd(FLUSH_RX);											//	чистим RX буфер
 				NRF_write_reg(STATUS, (1<<RX_DR)|(1<<TX_DS)|(1<<MAX_RT));	//	сбросим флаги прерывания
-
 			}
 			break;
 
-			case 5:		{put_byte_UART2(Stage); Stage = 0;}	break;								//	переходим в стадию сброса флагов и чистке буферов
+			case 5:		{put_byte_UART2(Stage); Stage = 0;}	break;			//	переходим в стадию сброса флагов и чистке буферов
 
 			default:
 			{
 				put_byte_UART2(Stage); Stage++;
 				#ifdef MIRF_Master
-					NRF_write(&message[0]);										//	отправляем пробный пакет
+//					NRF_write(&message[0]);									//	отправляем пробный пакет
 				#else
 				#endif
-
 			}
 			break;
 		}
@@ -139,10 +157,40 @@ NRF_INIT_TEST();
 #else
 		put_byte_UART2(0x0B);
 #endif
+
+	/*
 		put_byte_UART2(NRF_read_reg(CONFIG));
 		put_byte_UART2(NRF_read_reg(STATUS));
 		put_byte_UART2(NRF_read_reg(FIFO_STATUS));
+	*/
+		NRF_CSN(LOW);
+		put_byte_UART2(SPI2_put_byte(CONFIG));
+		NRF_CSN(HIGH);
 
+		NRF_CSN(LOW);
+		put_byte_UART2(SPI2_put_byte(0xFF));
+		NRF_CSN(HIGH);
+		delay_ms(10);
+
+		NRF_CSN(LOW);
+		put_byte_UART2(SPI2_put_byte(STATUS));
+		put_byte_UART2(SPI2_put_byte(CONFIG));
+		NRF_CSN(HIGH);
+
+		NRF_CSN(LOW);
+		put_byte_UART2(SPI2_put_byte(0xFF));
+		NRF_CSN(HIGH);
+		delay_ms(10);
+
+		NRF_CSN(LOW);
+		put_byte_UART2(SPI2_put_byte(FIFO_STATUS));
+		put_byte_UART2(SPI2_put_byte(CONFIG));
+		NRF_CSN(HIGH);
+
+		NRF_CSN(LOW);
+		put_byte_UART2(SPI2_put_byte(0xFF));
+		NRF_CSN(HIGH);
+		delay_ms(10);
 	}
 
 }

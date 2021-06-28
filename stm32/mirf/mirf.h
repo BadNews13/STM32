@@ -5,12 +5,12 @@
 #include "nRF24L01.h"
 
 
-#define	MIRF_Master		//	это устройство - мастер. Если подчиненный, то закоментировать эту строку
+//#define	MIRF_Master		//	это устройство - мастер. Если подчиненный, то закоментировать эту строку
 #define mirf_PAYLOAD 16
 
 
-#define NRF_CS_pin		10	//	B10
-#define NRF_CE_pin		0	//	B0
+#define NRF_CS_pin		1	//	B10	(PB1)
+#define NRF_CE_pin		2	//	B0	(PB2)
 
 #define LOW 	0
 #define HIGH 	1
@@ -56,8 +56,6 @@ void NRF_write (uint8_t *data);
 #define uint16_t unsigned int
 #endif
 
-
-void NRF_INIT_TEST(void);
 
 
 #endif /* _MIRF_H_ */
